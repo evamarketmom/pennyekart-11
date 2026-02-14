@@ -9,10 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
 
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -21,37 +19,20 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
-    if (isLogin) {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        toast({ title: "Login failed", description: error.message, variant: "destructive" });
-      } else {
-        // Check if user is approved
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("is_approved")
-          .eq("user_id", data.user.id)
-          .single();
-        if (profile && !profile.is_approved) {
-          await supabase.auth.signOut();
-          toast({ title: "Account pending", description: "Your account is awaiting admin approval.", variant: "destructive" });
-        } else {
-          navigate("/");
-        }
-      }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      toast({ title: "Login failed", description: error.message, variant: "destructive" });
     } else {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: window.location.origin,
-          data: { full_name: fullName },
-        },
-      });
-      if (error) {
-        toast({ title: "Signup failed", description: error.message, variant: "destructive" });
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_approved")
+        .eq("user_id", data.user.id)
+        .single();
+      if (profile && !profile.is_approved) {
+        await supabase.auth.signOut();
+        toast({ title: "Account pending", description: "Your account is awaiting admin approval.", variant: "destructive" });
       } else {
-        toast({ title: "Check your email", description: "We sent you a confirmation link." });
+        navigate("/");
       }
     }
     setLoading(false);
@@ -62,16 +43,10 @@ const Auth = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <img src={logo} alt="Pennyekart" className="mx-auto mb-4 h-12" />
-          <CardTitle className="text-2xl">{isLogin ? "Sign In" : "Create Account"}</CardTitle>
+          <CardTitle className="text-2xl">Sign In</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div>
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-              </div>
-            )}
             <div>
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
@@ -81,15 +56,9 @@ const Auth = () => {
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Loading..." : isLogin ? "Sign In" : "Sign Up"}
+              {loading ? "Loading..." : "Sign In"}
             </Button>
           </form>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
-            <button className="font-medium text-primary underline" onClick={() => setIsLogin(!isLogin)}>
-              {isLogin ? "Sign up" : "Sign in"}
-            </button>
-          </p>
         </CardContent>
       </Card>
     </div>
