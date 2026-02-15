@@ -56,9 +56,7 @@ interface StockHistory {
   product_name: string;
 }
 
-const generatePurchaseNumber = () => {
-  return String(Math.floor(1000 + Math.random() * 9000));
-};
+const formatPurchaseNumber = (num: number) => String(num).padStart(4, "0");
 
 const PurchasePage = () => {
   const { toast } = useToast();
@@ -70,8 +68,19 @@ const PurchasePage = () => {
   const [submitting, setSubmitting] = useState(false);
 
   // Bill info
-  const [purchaseNumber, setPurchaseNumber] = useState(generatePurchaseNumber());
+  const [purchaseNumber, setPurchaseNumber] = useState("...");
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split("T")[0]);
+
+  const fetchNextPurchaseNumber = async () => {
+    const { data } = await supabase.from("purchase_counter").select("last_number").limit(1).single();
+    if (data) {
+      setPurchaseNumber(formatPurchaseNumber((data as any).last_number + 1));
+    }
+  };
+
+  useEffect(() => {
+    fetchNextPurchaseNumber();
+  }, []);
 
   // History state
   const [history, setHistory] = useState<StockHistory[]>([]);
@@ -190,7 +199,9 @@ const PurchasePage = () => {
       toast({ title: `Purchase #${purchaseNumber} — Stock added to ${selectedGodownIds.length} godown(s), ${validItems.length} product(s)` });
       setItems([]);
       setSelectedGodownIds([]);
-      setPurchaseNumber(generatePurchaseNumber());
+      // Increment counter in DB and fetch next number
+      await supabase.rpc("get_next_purchase_number");
+      await fetchNextPurchaseNumber();
       setPurchaseDate(new Date().toISOString().split("T")[0]);
       if (mrpUpdates.length > 0) {
         const { data } = await supabase.from("products").select("id, name, price, category, purchase_rate, mrp, discount_rate").eq("is_active", true).order("name");
@@ -303,7 +314,7 @@ const PurchasePage = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <Label className="text-xs">Purchase No.</Label>
-                    <Input value={purchaseNumber} onChange={e => setPurchaseNumber(e.target.value)} maxLength={4} placeholder="4-digit number" />
+                    <Input value={purchaseNumber} disabled className="bg-muted font-mono" />
                   </div>
                   <div>
                     <Label className="text-xs">Date</Label>

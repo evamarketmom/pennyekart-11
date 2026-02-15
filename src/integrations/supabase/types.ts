@@ -508,6 +508,24 @@ export type Database = {
           },
         ]
       }
+      purchase_counter: {
+        Row: {
+          id: string
+          last_number: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          last_number?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          last_number?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       role_permissions: {
         Row: {
           created_at: string
@@ -735,6 +753,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_next_purchase_number: { Args: never; Returns: number }
       has_permission: { Args: { _permission_name: string }; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
     }
