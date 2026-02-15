@@ -344,26 +344,51 @@ const GodownsPage = () => {
                     </Select>
                   </div>
 
-                  {assignLocalBodyId && selectedLocalBody && (
-                    <div>
-                      <Label className="mb-2 block">Select Wards ({selectedLocalBody.ward_count} total)</Label>
-                      <div className="flex items-center gap-2 mb-3">
-                        <Checkbox id="all-wards" checked={allWards} onCheckedChange={(c) => handleAllWardsChange(!!c)} />
-                        <label htmlFor="all-wards" className="text-sm font-medium cursor-pointer">All Wards</label>
+                  {assignLocalBodyId && selectedLocalBody && (() => {
+                    // Find wards already allocated to OTHER micro godowns for this local body
+                    const allocatedByOthers = godownWards
+                      .filter(w => w.local_body_id === assignLocalBodyId && w.godown_id !== selectedGodown?.id)
+                      .map(w => w.ward_number);
+                    const availableWards = Array.from({ length: selectedLocalBody.ward_count }, (_, i) => i + 1)
+                      .filter(w => !allocatedByOthers.includes(w));
+
+                    return (
+                      <div>
+                        <Label className="mb-2 block">
+                          Select Wards ({availableWards.length} available of {selectedLocalBody.ward_count})
+                        </Label>
+                        {allocatedByOthers.length > 0 && (
+                          <p className="text-xs text-muted-foreground mb-2">
+                            Ward {allocatedByOthers.sort((a, b) => a - b).join(", ")} already assigned to other micro godowns
+                          </p>
+                        )}
+                        {availableWards.length === 0 ? (
+                          <p className="text-sm text-muted-foreground py-4 text-center">All wards are already assigned to other micro godowns</p>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-2 mb-3">
+                              <Checkbox id="all-wards" checked={allWards} onCheckedChange={(c) => {
+                                setAllWards(!!c);
+                                setSelectedWards(c ? availableWards : []);
+                              }} />
+                              <label htmlFor="all-wards" className="text-sm font-medium cursor-pointer">All Available Wards</label>
+                            </div>
+                            <div className="grid grid-cols-5 gap-2 max-h-48 overflow-y-auto">
+                              {availableWards.map(ward => (
+                                <label key={ward} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                                  <Checkbox checked={selectedWards.includes(ward)} onCheckedChange={() => toggleWard(ward)} />
+                                  {ward}
+                                </label>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                        {selectedWards.length > 0 && (
+                          <p className="mt-2 text-xs text-muted-foreground">{selectedWards.length} ward(s) selected</p>
+                        )}
                       </div>
-                      <div className="grid grid-cols-5 gap-2 max-h-48 overflow-y-auto">
-                        {Array.from({ length: selectedLocalBody.ward_count }, (_, i) => i + 1).map(ward => (
-                          <label key={ward} className="flex items-center gap-1.5 text-sm cursor-pointer">
-                            <Checkbox checked={selectedWards.includes(ward)} onCheckedChange={() => toggleWard(ward)} />
-                            {ward}
-                          </label>
-                        ))}
-                      </div>
-                      {selectedWards.length > 0 && (
-                        <p className="mt-2 text-xs text-muted-foreground">{selectedWards.length} ward(s) selected</p>
-                      )}
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   <Button onClick={handleAssign} disabled={!assignLocalBodyId || selectedWards.length === 0} className="w-full">
                     Assign
