@@ -47,6 +47,7 @@ interface Product {
   id: string;
   name: string;
   price: number;
+  mrp: number;
   category: string | null;
 }
 
@@ -58,6 +59,7 @@ interface StockItem {
   purchase_price: number;
   batch_number: string | null;
   expiry_date: string | null;
+  created_at: string;
   products?: Product;
 }
 
@@ -98,6 +100,9 @@ const GodownsPage = () => {
   const [allWards, setAllWards] = useState(false);
   const [activeTab, setActiveTab] = useState("micro");
   const [localBodySearch, setLocalBodySearch] = useState("");
+  // Purchase history state
+  const [purchaseHistoryFrom, setPurchaseHistoryFrom] = useState("");
+  const [purchaseHistoryTo, setPurchaseHistoryTo] = useState("");
 
   // Stock state
   const [products, setProducts] = useState<Product[]>([]);
@@ -132,12 +137,12 @@ const GodownsPage = () => {
   };
 
   const fetchProducts = async () => {
-    const { data } = await supabase.from("products").select("id, name, price, category").eq("is_active", true);
+    const { data } = await supabase.from("products").select("id, name, price, mrp, category").eq("is_active", true);
     if (data) setProducts(data as Product[]);
   };
 
   const fetchGodownStock = async () => {
-    const { data } = await supabase.from("godown_stock").select("*, products(id, name, price, category)");
+    const { data } = await supabase.from("godown_stock").select("*, products(id, name, price, mrp, category)");
     if (data) setGodownStock(data as unknown as StockItem[]);
   };
 
@@ -437,7 +442,7 @@ const GodownsPage = () => {
                 <TableRow>
                   <TableHead>Product</TableHead>
                   <TableHead>Qty</TableHead>
-                  <TableHead>Purchase Price</TableHead>
+                  <TableHead>MRP</TableHead>
                   <TableHead>Batch</TableHead>
                   <TableHead>Expiry</TableHead>
                   <TableHead></TableHead>
@@ -448,7 +453,7 @@ const GodownsPage = () => {
                   <TableRow key={s.id}>
                     <TableCell className="font-medium">{s.products?.name ?? "Unknown"}</TableCell>
                     <TableCell>{s.quantity}</TableCell>
-                    <TableCell>₹{s.purchase_price}</TableCell>
+                    <TableCell>₹{s.products?.mrp ?? 0}</TableCell>
                     <TableCell>{s.batch_number || "-"}</TableCell>
                     <TableCell>{s.expiry_date || "-"}</TableCell>
                     <TableCell>
@@ -456,6 +461,66 @@ const GodownsPage = () => {
                         <Trash2 className="h-3 w-3 text-destructive" />
                       </Button>
                     </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderPurchaseHistory = (g: Godown) => {
+    let history = getStockForGodown(g.id);
+    if (purchaseHistoryFrom) {
+      history = history.filter(s => s.created_at >= purchaseHistoryFrom);
+    }
+    if (purchaseHistoryTo) {
+      const toDate = purchaseHistoryTo + "T23:59:59";
+      history = history.filter(s => s.created_at <= toDate);
+    }
+    history.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <p className="text-sm font-medium text-muted-foreground">Purchase History</p>
+          <div className="flex gap-2 items-center">
+            <Input type="date" className="w-36 h-8 text-xs" value={purchaseHistoryFrom} onChange={e => setPurchaseHistoryFrom(e.target.value)} placeholder="From" />
+            <span className="text-xs text-muted-foreground">to</span>
+            <Input type="date" className="w-36 h-8 text-xs" value={purchaseHistoryTo} onChange={e => setPurchaseHistoryTo(e.target.value)} placeholder="To" />
+            {(purchaseHistoryFrom || purchaseHistoryTo) && (
+              <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => { setPurchaseHistoryFrom(""); setPurchaseHistoryTo(""); }}>Clear</Button>
+            )}
+          </div>
+        </div>
+        {history.length === 0 ? (
+          <p className="text-sm text-muted-foreground italic py-4 text-center">No purchase history</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Product</TableHead>
+                  <TableHead>Qty</TableHead>
+                  <TableHead>Purchase Price</TableHead>
+                  <TableHead>MRP</TableHead>
+                  <TableHead>Batch</TableHead>
+                  <TableHead>Expiry</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {history.map(s => (
+                  <TableRow key={s.id}>
+                    <TableCell className="text-xs">{new Date(s.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell className="font-medium">{s.products?.name ?? "Unknown"}</TableCell>
+                    <TableCell>{s.quantity}</TableCell>
+                    <TableCell>₹{s.purchase_price}</TableCell>
+                    <TableCell>₹{s.products?.mrp ?? 0}</TableCell>
+                    <TableCell>{s.batch_number || "-"}</TableCell>
+                    <TableCell>{s.expiry_date || "-"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -611,17 +676,19 @@ const GodownsPage = () => {
                     </CardHeader>
                     <CardContent>
                       <Tabs value={getGodownInnerTab(g.id)} onValueChange={(tab) => setInnerTab(g.id, tab)}>
-                        <TabsList className="mb-3">
+                        <TabsList className="mb-3 flex-wrap h-auto">
                           <TabsTrigger value="assignments">Assignments</TabsTrigger>
                           <TabsTrigger value="stock">
-                            <Package className="mr-1 h-3 w-3" /> Stock Details ({getStockForGodown(g.id).length})
+                            <Package className="mr-1 h-3 w-3" /> Stock ({getStockForGodown(g.id).length})
                           </TabsTrigger>
+                          <TabsTrigger value="purchase-history">Purchase History</TabsTrigger>
                           <TabsTrigger value="transfers">
                             <ArrowRightLeft className="mr-1 h-3 w-3" /> Transfers ({getTransfersForGodown(g.id).length})
                           </TabsTrigger>
                         </TabsList>
                         <TabsContent value="assignments">{renderAssignments(g)}</TabsContent>
                         <TabsContent value="stock">{renderStockDetails(g)}</TabsContent>
+                        <TabsContent value="purchase-history">{renderPurchaseHistory(g)}</TabsContent>
                         <TabsContent value="transfers">{renderStockTransfers(g)}</TabsContent>
                       </Tabs>
                     </CardContent>
