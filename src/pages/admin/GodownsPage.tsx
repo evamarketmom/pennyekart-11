@@ -422,9 +422,11 @@ const GodownsPage = () => {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-muted-foreground">Stock Items ({stock.length})</p>
-          <Button size="sm" onClick={() => { setStockGodown(g); setStockForm({ product_id: "", quantity: 0, purchase_price: 0, batch_number: "", expiry_date: "" }); setStockDialogOpen(true); }}>
-            <Plus className="mr-1 h-3 w-3" /> Add Stock
-          </Button>
+          {g.godown_type !== "micro" && (
+            <Button size="sm" onClick={() => { setStockGodown(g); setStockForm({ product_id: "", quantity: 0, purchase_price: 0, batch_number: "", expiry_date: "" }); setStockDialogOpen(true); }}>
+              <Plus className="mr-1 h-3 w-3" /> Add Stock
+            </Button>
+          )}
         </div>
         {stock.length === 0 ? (
           <p className="text-sm text-muted-foreground italic py-4 text-center">No stock items</p>
