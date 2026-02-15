@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import ImageUpload from "@/components/admin/ImageUpload";
 
 interface Banner {
   id: string; title: string; image_url: string | null; link_url: string | null;
@@ -69,7 +70,7 @@ const BannersPage = () => {
               <DialogHeader><DialogTitle>{editId ? "Edit Banner" : "New Banner"}</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <div><Label>Title</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
-                <div><Label>Image URL</Label><Input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} /></div>
+                <ImageUpload bucket="banners" value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} label="Banner Image" />
                 <div><Label>Link URL</Label><Input value={form.link_url} onChange={(e) => setForm({ ...form, link_url: e.target.value })} /></div>
                 <div><Label>Sort Order</Label><Input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: +e.target.value })} /></div>
                 <div className="flex items-center gap-2"><Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} /><Label>Active</Label></div>

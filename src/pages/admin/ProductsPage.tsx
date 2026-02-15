@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import ImageUpload from "@/components/admin/ImageUpload";
 
 interface Product {
   id: string; name: string; description: string | null; price: number;
@@ -118,9 +119,9 @@ const ProductsPage = () => {
                     )}
                   </select>
                 </div>
-                <div><Label>Image URL 1</Label><Input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} placeholder="Main image URL" /></div>
-                <div><Label>Image URL 2</Label><Input value={form.image_url_2} onChange={(e) => setForm({ ...form, image_url_2: e.target.value })} placeholder="Second image URL" /></div>
-                <div><Label>Image URL 3</Label><Input value={form.image_url_3} onChange={(e) => setForm({ ...form, image_url_3: e.target.value })} placeholder="Third image URL" /></div>
+                <ImageUpload bucket="products" value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} label="Image 1 (Main)" />
+                <ImageUpload bucket="products" value={form.image_url_2} onChange={(url) => setForm({ ...form, image_url_2: url })} label="Image 2" />
+                <ImageUpload bucket="products" value={form.image_url_3} onChange={(url) => setForm({ ...form, image_url_3: url })} label="Image 3" />
                 <div className="flex items-center gap-2"><Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} /><Label>Active</Label></div>
                 <Button className="w-full" onClick={handleSave}>Save</Button>
               </div>

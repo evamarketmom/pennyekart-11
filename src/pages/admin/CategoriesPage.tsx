@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import ImageUpload from "@/components/admin/ImageUpload";
 
 interface Category {
   id: string; name: string; icon: string | null; item_count: string | null;
@@ -74,6 +75,7 @@ const CategoriesPage = () => {
               <div className="space-y-3">
                 <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
                 <div><Label>Icon Name (Lucide)</Label><Input value={form.icon} onChange={(e) => setForm({ ...form, icon: e.target.value })} placeholder="e.g. Apple, Shirt, Smartphone" /></div>
+                <ImageUpload bucket="categories" value={form.item_count} onChange={(url) => setForm({ ...form, item_count: url })} label="Category Image" />
                 {tab === "general" && (
                   <div><Label>Item Count</Label><Input value={form.item_count} onChange={(e) => setForm({ ...form, item_count: e.target.value })} placeholder="e.g. 2,400+" /></div>
                 )}
