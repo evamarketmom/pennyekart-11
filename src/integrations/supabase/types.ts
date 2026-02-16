@@ -324,9 +324,13 @@ export type Database = {
       }
       orders: {
         Row: {
+          assigned_delivery_staff_id: string | null
           created_at: string
+          godown_id: string | null
           id: string
           items: Json
+          seller_id: string | null
+          seller_product_id: string | null
           shipping_address: string | null
           status: string
           total: number
@@ -334,9 +338,13 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          assigned_delivery_staff_id?: string | null
           created_at?: string
+          godown_id?: string | null
           id?: string
           items?: Json
+          seller_id?: string | null
+          seller_product_id?: string | null
           shipping_address?: string | null
           status?: string
           total?: number
@@ -344,16 +352,35 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          assigned_delivery_staff_id?: string | null
           created_at?: string
+          godown_id?: string | null
           id?: string
           items?: Json
+          seller_id?: string | null
+          seller_product_id?: string | null
           shipping_address?: string | null
           status?: string
           total?: number
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_godown_id_fkey"
+            columns: ["godown_id"]
+            isOneToOne: false
+            referencedRelation: "godowns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_seller_product_id_fkey"
+            columns: ["seller_product_id"]
+            isOneToOne: false
+            referencedRelation: "seller_products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       permissions: {
         Row: {
@@ -592,6 +619,35 @@ export type Database = {
         }
         Relationships: []
       }
+      seller_godown_assignments: {
+        Row: {
+          created_at: string
+          godown_id: string
+          id: string
+          seller_id: string
+        }
+        Insert: {
+          created_at?: string
+          godown_id: string
+          id?: string
+          seller_id: string
+        }
+        Update: {
+          created_at?: string
+          godown_id?: string
+          id?: string
+          seller_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_godown_assignments_godown_id_fkey"
+            columns: ["godown_id"]
+            isOneToOne: false
+            referencedRelation: "godowns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seller_products: {
         Row: {
           area_godown_id: string | null
@@ -647,6 +703,81 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      seller_wallet_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          order_id: string | null
+          seller_id: string
+          settled_by: string | null
+          type: string
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          seller_id: string
+          settled_by?: string | null
+          type: string
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          seller_id?: string
+          settled_by?: string | null
+          type?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_wallet_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_wallet_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "seller_wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_wallets: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          seller_id: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          seller_id: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          seller_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       services: {
         Row: {
