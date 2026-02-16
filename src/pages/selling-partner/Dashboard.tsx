@@ -9,10 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Package, Plus, LogOut, Store, ShoppingCart, Wallet } from "lucide-react";
+import { Package, Plus, LogOut, Store, ShoppingCart, Wallet, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import ImageUpload from "@/components/admin/ImageUpload";
 import logo from "@/assets/logo.png";
 
 interface SellerProduct {
@@ -23,14 +25,27 @@ interface SellerProduct {
   category: string | null;
   is_approved: boolean;
   is_active: boolean;
+  is_featured: boolean;
   stock: number;
   area_godown_id: string | null;
+  image_url: string | null;
+  image_url_2: string | null;
+  image_url_3: string | null;
+  purchase_rate: number;
+  mrp: number;
+  discount_rate: number;
   created_at: string;
 }
 
 interface Godown {
   id: string;
   name: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  category_type: string;
 }
 
 interface Order {
@@ -59,13 +74,20 @@ const STATUS_LABELS: Record<string, string> = {
   delivered: "Delivered",
 };
 
+const emptyForm = {
+  name: "", description: "", price: "", category: "", stock: "",
+  area_godown_id: "", image_url: "", image_url_2: "", image_url_3: "",
+  purchase_rate: "", mrp: "", discount_rate: "", is_featured: false,
+};
+
 const SellingPartnerDashboard = () => {
   const { profile, signOut, user } = useAuth();
   const { toast } = useToast();
   const [products, setProducts] = useState<SellerProduct[]>([]);
   const [assignedGodowns, setAssignedGodowns] = useState<Godown[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", price: "", category: "", stock: "", area_godown_id: "" });
+  const [form, setForm] = useState(emptyForm);
   const [orders, setOrders] = useState<Order[]>([]);
   const [walletBalance, setWalletBalance] = useState(0);
   const [transactions, setTransactions] = useState<WalletTxn[]>([]);
@@ -83,6 +105,11 @@ const SellingPartnerDashboard = () => {
     const godownIds = assignments.map(a => a.godown_id);
     const { data: godownData } = await supabase.from("godowns").select("id, name").in("id", godownIds);
     if (godownData) setAssignedGodowns(godownData);
+  };
+
+  const fetchCategories = async () => {
+    const { data } = await supabase.from("categories").select("id, name, category_type").eq("is_active", true).order("sort_order");
+    if (data) setCategories(data as Category[]);
   };
 
   const fetchOrders = async () => {
@@ -104,6 +131,7 @@ const SellingPartnerDashboard = () => {
   useEffect(() => {
     fetchProducts();
     fetchAssignedGodowns();
+    fetchCategories();
     fetchOrders();
     fetchWallet();
   }, [user]);
@@ -111,20 +139,30 @@ const SellingPartnerDashboard = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    const mrp = parseFloat(form.mrp) || 0;
+    const discountRate = parseFloat(form.discount_rate) || 0;
+    const sellingPrice = mrp - discountRate;
     const { error } = await supabase.from("seller_products").insert({
       seller_id: user.id,
       name: form.name.trim(),
       description: form.description.trim() || null,
-      price: parseFloat(form.price) || 0,
+      price: sellingPrice,
+      purchase_rate: parseFloat(form.purchase_rate) || 0,
+      mrp,
+      discount_rate: discountRate,
       category: form.category.trim() || null,
       stock: parseInt(form.stock) || 0,
       area_godown_id: form.area_godown_id || null,
+      image_url: form.image_url || null,
+      image_url_2: form.image_url_2 || null,
+      image_url_3: form.image_url_3 || null,
+      is_featured: form.is_featured,
     });
     if (error) {
       toast({ title: "Failed", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Product submitted for approval!" });
-      setForm({ name: "", description: "", price: "", category: "", stock: "", area_godown_id: "" });
+      setForm(emptyForm);
       setDialogOpen(false);
       fetchProducts();
     }
@@ -186,20 +224,65 @@ const SellingPartnerDashboard = () => {
           {/* PRODUCTS TAB */}
           <TabsContent value="products" className="space-y-4">
             <div className="flex justify-end">
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <Dialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) setForm(emptyForm); }}>
                 <DialogTrigger asChild>
                   <Button><Plus className="mr-2 h-4 w-4" /> Add Product</Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-h-[85vh] flex flex-col">
                   <DialogHeader><DialogTitle>Add Product</DialogTitle></DialogHeader>
-                  <form onSubmit={handleCreate} className="space-y-4">
+                  <form onSubmit={handleCreate} className="space-y-3 overflow-y-auto pr-2 flex-1">
                     <div><Label>Product Name</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required /></div>
                     <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div><Label>Price (₹)</Label><Input type="number" min="0" step="0.01" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} required /></div>
+
+                    {/* Pricing - same as admin */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div><Label>Purchase Rate</Label><Input type="number" min="0" step="0.01" value={form.purchase_rate} onChange={e => setForm({ ...form, purchase_rate: e.target.value })} /></div>
+                      <div><Label>MRP</Label><Input type="number" min="0" step="0.01" value={form.mrp} onChange={e => {
+                        const m = e.target.value;
+                        const dr = parseFloat(form.discount_rate) || 0;
+                        setForm({ ...form, mrp: m, price: String((parseFloat(m) || 0) - dr) });
+                      }} required /></div>
+                      <div><Label>Discount Rate</Label><Input type="number" min="0" step="0.01" value={form.discount_rate} onChange={e => {
+                        const dr = e.target.value;
+                        const m = parseFloat(form.mrp) || 0;
+                        setForm({ ...form, discount_rate: dr, price: String(m - (parseFloat(dr) || 0)) });
+                      }} /></div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><Label>Selling Price</Label><Input type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} /></div>
                       <div><Label>Stock</Label><Input type="number" min="0" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} required /></div>
                     </div>
-                    <div><Label>Category</Label><Input value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} /></div>
+
+                    {/* Category */}
+                    <div>
+                      <Label>Category</Label>
+                      <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+                        <option value="">Select category</option>
+                        {categories.filter(c => c.category_type === "grocery").length > 0 && (
+                          <optgroup label="Grocery & Essentials">
+                            {categories.filter(c => c.category_type === "grocery").map(c => (
+                              <option key={c.id} value={c.name}>{c.name}</option>
+                            ))}
+                          </optgroup>
+                        )}
+                        {categories.filter(c => c.category_type !== "grocery").length > 0 && (
+                          <optgroup label="General Categories">
+                            {categories.filter(c => c.category_type !== "grocery").map(c => (
+                              <option key={c.id} value={c.name}>{c.name}</option>
+                            ))}
+                          </optgroup>
+                        )}
+                      </select>
+                    </div>
+
+                    {/* Images: 1 upload + 2 link fields */}
+                    <ImageUpload bucket="products" value={form.image_url} onChange={url => setForm({ ...form, image_url: url })} label="Image 1 (Upload or paste URL)" />
+                    <div><Label>Image 2 (URL)</Label><Input value={form.image_url_2} onChange={e => setForm({ ...form, image_url_2: e.target.value })} placeholder="Paste image URL" /></div>
+                    {form.image_url_2 && <img src={form.image_url_2} alt="Preview 2" className="h-20 w-20 rounded-md border object-cover" />}
+                    <div><Label>Image 3 (URL)</Label><Input value={form.image_url_3} onChange={e => setForm({ ...form, image_url_3: e.target.value })} placeholder="Paste image URL" /></div>
+                    {form.image_url_3 && <img src={form.image_url_3} alt="Preview 3" className="h-20 w-20 rounded-md border object-cover" />}
+
+                    {/* Area Godown */}
                     <div>
                       <Label>Area Godown (assigned by admin)</Label>
                       <Select value={form.area_godown_id} onValueChange={v => setForm({ ...form, area_godown_id: v })}>
@@ -209,6 +292,17 @@ const SellingPartnerDashboard = () => {
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {/* Featured toggle */}
+                    <div className="flex items-center gap-2 rounded-lg border p-3">
+                      <Star className="h-4 w-4 text-yellow-500" />
+                      <div className="flex-1">
+                        <Label className="text-sm font-medium">Featured Product</Label>
+                        <p className="text-xs text-muted-foreground">Requires admin approval to display</p>
+                      </div>
+                      <Switch checked={form.is_featured} onCheckedChange={v => setForm({ ...form, is_featured: v })} />
+                    </div>
+
                     <Button type="submit" className="w-full" disabled={assignedGodowns.length === 0}>Submit for Approval</Button>
                   </form>
                 </DialogContent>
@@ -221,9 +315,15 @@ const SellingPartnerDashboard = () => {
               <div className="space-y-3">
                 {products.map(p => (
                   <div key={p.id} className="flex items-center justify-between rounded-lg border p-3">
-                    <div>
-                      <p className="font-medium text-foreground">{p.name}</p>
-                      <p className="text-sm text-muted-foreground">₹{p.price} · Stock: {p.stock}</p>
+                    <div className="flex items-center gap-3">
+                      {p.image_url && <img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-md border object-cover" />}
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-foreground">{p.name}</p>
+                          {p.is_featured && <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />}
+                        </div>
+                        <p className="text-sm text-muted-foreground">₹{p.price} · MRP: ₹{p.mrp} · Stock: {p.stock}</p>
+                      </div>
                     </div>
                     <Badge variant={p.is_approved ? "default" : "secondary"}>
                       {p.is_approved ? "Approved" : "Pending"}
