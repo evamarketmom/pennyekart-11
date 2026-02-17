@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Truck, Phone, Mail, MapPin, Settings2, X } from "lucide-react";
+import { Search, Truck, Phone, Mail, MapPin, Settings2, Wallet } from "lucide-react";
 
 interface DeliveryStaff {
   id: string;
@@ -44,6 +44,12 @@ const DeliveryManagementPage = () => {
   const [selectedLB, setSelectedLB] = useState("");
   const [selectedWards, setSelectedWards] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
+  const [settleDialogOpen, setSettleDialogOpen] = useState(false);
+  const [settleStaff, setSettleStaff] = useState<DeliveryStaff | null>(null);
+  const [settleAmount, setSettleAmount] = useState("");
+  const [settleNote, setSettleNote] = useState("");
+  const [settleBalance, setSettleBalance] = useState(0);
+  const [settling, setSettling] = useState(false);
   const { toast } = useToast();
 
   const fetchStaff = async () => {
@@ -154,6 +160,59 @@ const DeliveryManagementPage = () => {
     fetchStaff();
   };
 
+  const openSettleDialog = async (s: DeliveryStaff) => {
+    setSettleStaff(s);
+    setSettleAmount("");
+    setSettleNote("");
+    const { data } = await supabase.from("delivery_staff_wallets").select("balance").eq("staff_user_id", s.user_id).maybeSingle();
+    setSettleBalance(data?.balance ?? 0);
+    setSettleDialogOpen(true);
+  };
+
+  const handleSettle = async () => {
+    if (!settleStaff || !settleAmount || Number(settleAmount) <= 0) return;
+    const amt = Number(settleAmount);
+    if (amt > settleBalance) {
+      toast({ title: "Error", description: "Amount exceeds wallet balance", variant: "destructive" });
+      return;
+    }
+    setSettling(true);
+
+    // Get or create wallet
+    let { data: wallet } = await supabase.from("delivery_staff_wallets").select("id").eq("staff_user_id", settleStaff.user_id).maybeSingle();
+    if (!wallet) {
+      const { data: newW } = await supabase.from("delivery_staff_wallets").insert({ staff_user_id: settleStaff.user_id }).select("id").single();
+      wallet = newW;
+    }
+    if (!wallet) { setSettling(false); return; }
+
+    // Insert settlement transaction
+    const { error: txErr } = await supabase.from("delivery_staff_wallet_transactions").insert({
+      staff_user_id: settleStaff.user_id,
+      wallet_id: wallet.id,
+      amount: amt,
+      type: "settlement",
+      description: settleNote || "Cash settlement by admin",
+    });
+    if (txErr) {
+      toast({ title: "Error", description: txErr.message, variant: "destructive" });
+      setSettling(false);
+      return;
+    }
+
+    // Deduct balance
+    const { error: walErr } = await supabase.from("delivery_staff_wallets").update({ balance: settleBalance - amt }).eq("staff_user_id", settleStaff.user_id);
+    if (walErr) {
+      toast({ title: "Error", description: walErr.message, variant: "destructive" });
+      setSettling(false);
+      return;
+    }
+
+    toast({ title: "Settlement recorded", description: `₹${amt} settled for ${settleStaff.full_name}` });
+    setSettling(false);
+    setSettleDialogOpen(false);
+  };
+
   const filtered = staff.filter((s) => {
     if (!search) return true;
     const q = search.toLowerCase();
@@ -261,9 +320,14 @@ const DeliveryManagementPage = () => {
                       <Switch checked={s.is_approved} onCheckedChange={() => toggleApproval(s.user_id, s.is_approved)} />
                     </TableCell>
                     <TableCell>
-                      <Button variant="outline" size="sm" onClick={() => openWardDialog(s)}>
-                        <Settings2 className="h-4 w-4 mr-1" /> Assign Wards
-                      </Button>
+                      <div className="flex gap-1.5">
+                        <Button variant="outline" size="sm" onClick={() => openWardDialog(s)}>
+                          <Settings2 className="h-4 w-4 mr-1" /> Wards
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => openSettleDialog(s)}>
+                          <Wallet className="h-4 w-4 mr-1" /> Settle
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -307,6 +371,45 @@ const DeliveryManagementPage = () => {
               <Button variant="outline" onClick={() => setWardDialogOpen(false)}>Cancel</Button>
               <Button onClick={saveWardAssignments} disabled={saving}>
                 {saving ? "Saving..." : "Save Assignments"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={settleDialogOpen} onOpenChange={setSettleDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Settle Wallet — {settleStaff?.full_name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <span className="text-sm text-muted-foreground">Current Balance</span>
+              <span className="text-lg font-bold">₹{settleBalance}</span>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Settlement Amount (₹)</label>
+              <Input
+                type="number"
+                placeholder="Enter amount"
+                value={settleAmount}
+                onChange={(e) => setSettleAmount(e.target.value)}
+                min={1}
+                max={settleBalance}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Note (optional)</label>
+              <Input
+                placeholder="e.g. Cash collected on 17 Feb"
+                value={settleNote}
+                onChange={(e) => setSettleNote(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setSettleDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleSettle} disabled={settling || !settleAmount || Number(settleAmount) <= 0}>
+                {settling ? "Settling..." : `Settle ₹${settleAmount || 0}`}
               </Button>
             </div>
           </div>
