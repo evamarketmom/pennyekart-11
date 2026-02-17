@@ -89,6 +89,110 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_staff_wallet_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          order_id: string | null
+          staff_user_id: string
+          type: string
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          staff_user_id: string
+          type?: string
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          staff_user_id?: string
+          type?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_staff_wallet_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_staff_wallet_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_staff_wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_staff_wallets: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          staff_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          staff_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          staff_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      delivery_staff_ward_assignments: {
+        Row: {
+          created_at: string
+          id: string
+          local_body_id: string
+          staff_user_id: string
+          ward_number: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          local_body_id: string
+          staff_user_id: string
+          ward_number: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          local_body_id?: string
+          staff_user_id?: string
+          ward_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_staff_ward_assignments_local_body_id_fkey"
+            columns: ["local_body_id"]
+            isOneToOne: false
+            referencedRelation: "locations_local_bodies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       godown_local_bodies: {
         Row: {
           created_at: string
