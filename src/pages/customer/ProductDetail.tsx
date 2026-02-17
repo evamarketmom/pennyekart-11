@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Star, ArrowLeft, ChevronDown, ChevronUp, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProductRow from "@/components/ProductRow";
-import MobileBottomNav from "@/components/MobileBottomNav";
+import { useCart } from "@/hooks/useCart";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProductData {
   id: string;
@@ -35,6 +36,32 @@ const ProductDetail = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [showDetails, setShowDetails] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
+  const { addItem } = useCart();
+  const { toast } = useToast();
+
+  const handleAddToCart = () => {
+    if (!product) return;
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      mrp: product.mrp,
+      image: product.image_url || "",
+    });
+    toast({ title: "Added to cart", description: `${product.name} added to your cart.` });
+  };
+
+  const handleBuyNow = () => {
+    if (!product) return;
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      mrp: product.mrp,
+      image: product.image_url || "",
+    });
+    navigate("/cart");
+  };
 
   const images = product
     ? [product.image_url, product.image_url_2, product.image_url_3].filter(Boolean) as string[]
@@ -211,10 +238,10 @@ const ProductDetail = () => {
 
             {/* Sticky Add to Cart (desktop) */}
             <div className="mt-6 hidden gap-3 md:flex">
-              <Button variant="outline" className="flex-1" disabled={product.stock <= 0}>
+              <Button variant="outline" className="flex-1" disabled={product.stock <= 0} onClick={handleAddToCart}>
                 Add to cart
               </Button>
-              <Button className="flex-1" disabled={product.stock <= 0}>
+              <Button className="flex-1" disabled={product.stock <= 0} onClick={handleBuyNow}>
                 Buy at ₹{product.price}
               </Button>
             </div>
@@ -231,10 +258,10 @@ const ProductDetail = () => {
 
       {/* Mobile sticky bottom bar */}
       <div className="fixed bottom-0 left-0 right-0 z-30 flex gap-2 border-t border-border bg-background p-3 md:hidden">
-        <Button variant="outline" className="flex-1" disabled={product.stock <= 0}>
+        <Button variant="outline" className="flex-1" disabled={product.stock <= 0} onClick={handleAddToCart}>
           Add to cart
         </Button>
-        <Button className="flex-1" disabled={product.stock <= 0}>
+        <Button className="flex-1" disabled={product.stock <= 0} onClick={handleBuyNow}>
           Buy at ₹{product.price}
         </Button>
       </div>

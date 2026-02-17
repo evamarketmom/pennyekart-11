@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { CartProvider } from "@/hooks/useCart";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
@@ -36,6 +37,7 @@ import SellingPartnerDashboard from "./pages/selling-partner/Dashboard";
 import CustomerSignup from "./pages/customer/Signup";
 import CustomerLogin from "./pages/customer/Login";
 import ProductDetail from "./pages/customer/ProductDetail";
+import Cart from "./pages/customer/Cart";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +53,7 @@ const App = () => {
         {showSplash && <SplashScreen onComplete={hideSplash} />}
         <BrowserRouter>
           <AuthProvider>
+            <CartProvider>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
@@ -81,6 +84,7 @@ const App = () => {
 
               {/* Customer */}
               <Route path="/product/:id" element={<ProductDetail />} />
+              <Route path="/cart" element={<Cart />} />
               <Route path="/customer/signup" element={<CustomerSignup />} />
               <Route path="/customer/login" element={<CustomerLogin />} />
               <Route path="/customer/login" element={<CustomerLogin />} />
@@ -97,6 +101,7 @@ const App = () => {
 
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </CartProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
