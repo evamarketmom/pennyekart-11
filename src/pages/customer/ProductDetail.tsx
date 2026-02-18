@@ -23,9 +23,11 @@ interface ProductData {
   stock: number;
 }
 
-const getYoutubeEmbedUrl = (url: string) => {
+const getYoutubeEmbedUrl = (url: string, autoplay = false) => {
   const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
-  return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+  if (!match) return null;
+  const params = autoplay ? "?autoplay=1&mute=1&loop=1&playlist=" + match[1] : "";
+  return `https://www.youtube.com/embed/${match[1]}${params}`;
 };
 
 const ProductDetail = () => {
@@ -199,7 +201,7 @@ const ProductDetail = () => {
     ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
     : 0;
 
-  const embedUrl = product.video_url ? getYoutubeEmbedUrl(product.video_url) : null;
+  const embedUrl = product.video_url ? getYoutubeEmbedUrl(product.video_url, true) : null;
 
   const similarRowProducts = similarProducts.map(p => ({
     id: p.id,
