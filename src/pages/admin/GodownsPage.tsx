@@ -99,6 +99,7 @@ const GODOWN_TYPES = [
 ];
 
 const GodownsPage = () => {
+  const [expandedGodowns, setExpandedGodowns] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
   const [godowns, setGodowns] = useState<Godown[]>([]);
   const [localBodies, setLocalBodies] = useState<LocalBody[]>([]);
@@ -947,43 +948,55 @@ const GodownsPage = () => {
               <div className="space-y-4">
                 {filteredGodowns.length === 0 ? (
                   <Card><CardContent className="py-8 text-center text-muted-foreground">No {t.label}s yet.</CardContent></Card>
-                ) : filteredGodowns.map(g => (
-                  <Card key={g.id}>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Warehouse className="h-5 w-5 text-primary" />
-                        <CardTitle className="text-lg">{g.name}</CardTitle>
-                        <Badge variant={g.is_active ? "default" : "secondary"}>{g.is_active ? "Active" : "Inactive"}</Badge>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => { setSelectedGodown(g); resetAssignForm(); setAssignDialogOpen(true); }}>
-                          {g.godown_type === "micro" ? "Assign Wards" : "Assign Panchayath"}
-                        </Button>
-                        <Button size="sm" variant="destructive" onClick={() => handleDelete(g.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <Tabs value={getGodownInnerTab(g.id)} onValueChange={(tab) => setInnerTab(g.id, tab)}>
-                        <TabsList className="mb-3 flex-wrap h-auto">
-                          <TabsTrigger value="assignments">Assignments</TabsTrigger>
-                          <TabsTrigger value="stock">
-                            <Package className="mr-1 h-3 w-3" /> Stock ({getStockForGodown(g.id).length})
-                          </TabsTrigger>
-                          <TabsTrigger value="purchase-history">Purchase History</TabsTrigger>
-                          <TabsTrigger value="transfers">
-                            <ArrowRightLeft className="mr-1 h-3 w-3" /> Transfers ({getTransfersForGodown(g.id).length})
-                          </TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="assignments">{renderAssignments(g)}</TabsContent>
-                        <TabsContent value="stock">{renderStockDetails(g)}</TabsContent>
-                        <TabsContent value="purchase-history">{renderPurchaseHistory(g)}</TabsContent>
-                        <TabsContent value="transfers">{renderStockTransfers(g)}</TabsContent>
-                      </Tabs>
-                    </CardContent>
-                  </Card>
-                ))}
+                ) : filteredGodowns.map(g => {
+                  const isExpanded = expandedGodowns[g.id] ?? false;
+                  const assignments = godownLocalBodies.filter(glb => glb.godown_id === g.id);
+                  const stockCount = getStockForGodown(g.id).length;
+                  return (
+                    <Card key={g.id}>
+                      <CardHeader
+                        className="flex flex-row items-center justify-between cursor-pointer"
+                        onClick={() => setExpandedGodowns(prev => ({ ...prev, [g.id]: !prev[g.id] }))}
+                      >
+                        <div className="flex items-center gap-3">
+                          {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          <Warehouse className="h-5 w-5 text-primary" />
+                          <CardTitle className="text-lg">{g.name}</CardTitle>
+                          <Badge variant={g.is_active ? "default" : "secondary"}>{g.is_active ? "Active" : "Inactive"}</Badge>
+                          <span className="text-xs text-muted-foreground">{assignments.length} area(s) · {stockCount} stock entries</span>
+                        </div>
+                        <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                          <Button size="sm" variant="outline" onClick={() => { setSelectedGodown(g); resetAssignForm(); setAssignDialogOpen(true); }}>
+                            {g.godown_type === "micro" ? "Assign Wards" : "Assign Panchayath"}
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDelete(g.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      {isExpanded && (
+                        <CardContent>
+                          <Tabs value={getGodownInnerTab(g.id)} onValueChange={(tab) => setInnerTab(g.id, tab)}>
+                            <TabsList className="mb-3 flex-wrap h-auto">
+                              <TabsTrigger value="assignments">Assignments</TabsTrigger>
+                              <TabsTrigger value="stock">
+                                <Package className="mr-1 h-3 w-3" /> Stock ({stockCount})
+                              </TabsTrigger>
+                              <TabsTrigger value="purchase-history">Purchase History</TabsTrigger>
+                              <TabsTrigger value="transfers">
+                                <ArrowRightLeft className="mr-1 h-3 w-3" /> Transfers ({getTransfersForGodown(g.id).length})
+                              </TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="assignments">{renderAssignments(g)}</TabsContent>
+                            <TabsContent value="stock">{renderStockDetails(g)}</TabsContent>
+                            <TabsContent value="purchase-history">{renderPurchaseHistory(g)}</TabsContent>
+                            <TabsContent value="transfers">{renderStockTransfers(g)}</TabsContent>
+                          </Tabs>
+                        </CardContent>
+                      )}
+                    </Card>
+                  );
+                })}
               </div>
             </TabsContent>
           ))}
