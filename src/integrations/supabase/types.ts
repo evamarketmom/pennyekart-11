@@ -618,11 +618,22 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bank_account_name: string | null
+          bank_account_number: string | null
+          bank_ifsc: string | null
+          business_address: string | null
+          business_city: string | null
+          business_email: string | null
+          business_phone: string | null
+          business_pincode: string | null
+          business_state: string | null
+          company_name: string | null
           created_at: string
           date_of_birth: string | null
           delivery_type: string | null
           email: string | null
           full_name: string | null
+          gst_number: string | null
           id: string
           is_approved: boolean
           is_super_admin: boolean
@@ -636,11 +647,22 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_ifsc?: string | null
+          business_address?: string | null
+          business_city?: string | null
+          business_email?: string | null
+          business_phone?: string | null
+          business_pincode?: string | null
+          business_state?: string | null
+          company_name?: string | null
           created_at?: string
           date_of_birth?: string | null
           delivery_type?: string | null
           email?: string | null
           full_name?: string | null
+          gst_number?: string | null
           id?: string
           is_approved?: boolean
           is_super_admin?: boolean
@@ -654,11 +676,22 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_ifsc?: string | null
+          business_address?: string | null
+          business_city?: string | null
+          business_email?: string | null
+          business_phone?: string | null
+          business_pincode?: string | null
+          business_state?: string | null
+          company_name?: string | null
           created_at?: string
           date_of_birth?: string | null
           delivery_type?: string | null
           email?: string | null
           full_name?: string | null
+          gst_number?: string | null
           id?: string
           is_approved?: boolean
           is_super_admin?: boolean

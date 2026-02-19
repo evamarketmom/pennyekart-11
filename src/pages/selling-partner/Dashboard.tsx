@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Package, Plus, LogOut, Store, ShoppingCart, Wallet, Star, PackagePlus, Pencil, BarChart3, TrendingUp, MapPin, ArrowDownLeft, Clock } from "lucide-react";
+import { Package, Plus, LogOut, Store, ShoppingCart, Wallet, Star, PackagePlus, Pencil, BarChart3, TrendingUp, MapPin, ArrowDownLeft, Clock, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ImageUpload from "@/components/admin/ImageUpload";
 import logo from "@/assets/logo.png";
@@ -91,6 +91,15 @@ const SellingPartnerDashboard = () => {
   const [addStockDialogOpen, setAddStockDialogOpen] = useState(false);
   const [addStockProduct, setAddStockProduct] = useState<SellerProduct | null>(null);
   const [addStockQty, setAddStockQty] = useState("");
+
+  // Profile settings state
+  const [profileForm, setProfileForm] = useState({
+    company_name: "", gst_number: "",
+    business_address: "", business_city: "", business_state: "", business_pincode: "",
+    business_phone: "", business_email: "",
+    bank_account_name: "", bank_account_number: "", bank_ifsc: "",
+  });
+  const [profileLoading, setProfileLoading] = useState(false);
 
   // Analytics state
   const [analytics, setAnalytics] = useState<{
@@ -229,10 +238,47 @@ const SellingPartnerDashboard = () => {
     setAnalytics({ itemStats, panchayathStats });
   };
 
+  const fetchProfileSettings = async () => {
+    if (!user) return;
+    const { data } = await supabase.from("profiles").select("company_name, gst_number, business_address, business_city, business_state, business_pincode, business_phone, business_email, bank_account_name, bank_account_number, bank_ifsc").eq("user_id", user.id).single();
+    if (data) {
+      setProfileForm({
+        company_name: data.company_name ?? "", gst_number: data.gst_number ?? "",
+        business_address: data.business_address ?? "", business_city: data.business_city ?? "",
+        business_state: data.business_state ?? "", business_pincode: data.business_pincode ?? "",
+        business_phone: data.business_phone ?? "", business_email: data.business_email ?? "",
+        bank_account_name: data.bank_account_name ?? "", bank_account_number: data.bank_account_number ?? "",
+        bank_ifsc: data.bank_ifsc ?? "",
+      });
+    }
+  };
+
+  const handleProfileSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setProfileLoading(true);
+    const { error } = await supabase.from("profiles").update({
+      company_name: profileForm.company_name.trim() || null,
+      gst_number: profileForm.gst_number.trim() || null,
+      business_address: profileForm.business_address.trim() || null,
+      business_city: profileForm.business_city.trim() || null,
+      business_state: profileForm.business_state.trim() || null,
+      business_pincode: profileForm.business_pincode.trim() || null,
+      business_phone: profileForm.business_phone.trim() || null,
+      business_email: profileForm.business_email.trim() || null,
+      bank_account_name: profileForm.bank_account_name.trim() || null,
+      bank_account_number: profileForm.bank_account_number.trim() || null,
+      bank_ifsc: profileForm.bank_ifsc.trim() || null,
+    }).eq("user_id", user.id);
+    setProfileLoading(false);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
+    else { toast({ title: "Profile updated successfully!" }); }
+  };
+
   useEffect(() => {
     if (!user) return;
     const init = async () => {
-      await Promise.all([fetchAssignedGodowns(), fetchCategories(), fetchWallet()]);
+      await Promise.all([fetchAssignedGodowns(), fetchCategories(), fetchWallet(), fetchProfileSettings()]);
       const { data: myProds } = await supabase.from("seller_products").select("*").eq("seller_id", user.id).order("created_at", { ascending: false });
       const prods = (myProds ?? []) as SellerProduct[];
       setProducts(prods);
@@ -373,11 +419,12 @@ const SellingPartnerDashboard = () => {
         </div>
 
         <Tabs defaultValue="products">
-          <TabsList className="w-full grid grid-cols-4">
+          <TabsList className="w-full grid grid-cols-5">
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="wallet">Wallet</TabsTrigger>
+            <TabsTrigger value="profile">Profile</TabsTrigger>
           </TabsList>
 
           {/* PRODUCTS TAB */}
@@ -771,6 +818,75 @@ const SellingPartnerDashboard = () => {
                 })}
               </div>
             )}
+          </TabsContent>
+
+          {/* PROFILE TAB */}
+          <TabsContent value="profile" className="space-y-4">
+            <form onSubmit={handleProfileSave} className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><Settings className="h-5 w-5" /> Company Details</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="company_name">Company / Business Name</Label>
+                    <Input id="company_name" value={profileForm.company_name} onChange={e => setProfileForm(f => ({ ...f, company_name: e.target.value }))} maxLength={200} />
+                  </div>
+                  <div>
+                    <Label htmlFor="gst_number">GST Number</Label>
+                    <Input id="gst_number" value={profileForm.gst_number} onChange={e => setProfileForm(f => ({ ...f, gst_number: e.target.value.toUpperCase() }))} placeholder="e.g. 22AAAAA0000A1Z5" maxLength={15} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="business_address">Business Address</Label>
+                    <Textarea id="business_address" value={profileForm.business_address} onChange={e => setProfileForm(f => ({ ...f, business_address: e.target.value }))} maxLength={500} rows={2} />
+                  </div>
+                  <div>
+                    <Label htmlFor="business_city">City</Label>
+                    <Input id="business_city" value={profileForm.business_city} onChange={e => setProfileForm(f => ({ ...f, business_city: e.target.value }))} maxLength={100} />
+                  </div>
+                  <div>
+                    <Label htmlFor="business_state">State</Label>
+                    <Input id="business_state" value={profileForm.business_state} onChange={e => setProfileForm(f => ({ ...f, business_state: e.target.value }))} maxLength={100} />
+                  </div>
+                  <div>
+                    <Label htmlFor="business_pincode">Pincode</Label>
+                    <Input id="business_pincode" value={profileForm.business_pincode} onChange={e => setProfileForm(f => ({ ...f, business_pincode: e.target.value.replace(/\D/g, "").slice(0, 6) }))} maxLength={6} />
+                  </div>
+                  <div>
+                    <Label htmlFor="business_phone">Business Phone</Label>
+                    <Input id="business_phone" type="tel" value={profileForm.business_phone} onChange={e => setProfileForm(f => ({ ...f, business_phone: e.target.value.replace(/\D/g, "").slice(0, 10) }))} maxLength={10} />
+                  </div>
+                  <div>
+                    <Label htmlFor="business_email">Business Email</Label>
+                    <Input id="business_email" type="email" value={profileForm.business_email} onChange={e => setProfileForm(f => ({ ...f, business_email: e.target.value }))} maxLength={255} />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><Wallet className="h-5 w-5" /> Bank Details</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="bank_account_name">Account Holder Name</Label>
+                    <Input id="bank_account_name" value={profileForm.bank_account_name} onChange={e => setProfileForm(f => ({ ...f, bank_account_name: e.target.value }))} maxLength={200} />
+                  </div>
+                  <div>
+                    <Label htmlFor="bank_account_number">Account Number</Label>
+                    <Input id="bank_account_number" value={profileForm.bank_account_number} onChange={e => setProfileForm(f => ({ ...f, bank_account_number: e.target.value.replace(/\D/g, "") }))} maxLength={20} />
+                  </div>
+                  <div>
+                    <Label htmlFor="bank_ifsc">IFSC Code</Label>
+                    <Input id="bank_ifsc" value={profileForm.bank_ifsc} onChange={e => setProfileForm(f => ({ ...f, bank_ifsc: e.target.value.toUpperCase() }))} placeholder="e.g. SBIN0001234" maxLength={11} />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Button type="submit" disabled={profileLoading} className="w-full sm:w-auto">
+                {profileLoading ? "Saving..." : "Save Profile"}
+              </Button>
+            </form>
           </TabsContent>
         </Tabs>
       </main>
