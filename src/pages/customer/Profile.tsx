@@ -330,6 +330,22 @@ const Profile = () => {
           </Card>
         )}
 
+        {/* Login Links */}
+        <Card>
+          <CardContent className="p-4 space-y-2">
+            <p className="text-sm font-semibold text-muted-foreground mb-2">Switch Account</p>
+            <Button variant="outline" className="w-full justify-start gap-2" onClick={() => navigate("/auth")}>
+              <User className="h-4 w-4" /> Admin Login
+            </Button>
+            <Button variant="outline" className="w-full justify-start gap-2" onClick={() => navigate("/selling-partner/login")}>
+              <ShoppingBag className="h-4 w-4" /> Selling Partner Login
+            </Button>
+            <Button variant="outline" className="w-full justify-start gap-2" onClick={() => navigate("/delivery-staff/login")}>
+              <Truck className="h-4 w-4" /> Delivery Partner Login
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Logout */}
         <Button variant="destructive" className="w-full" onClick={async () => { await signOut(); navigate("/"); }}>
           Logout
