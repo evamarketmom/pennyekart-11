@@ -57,36 +57,107 @@ const PennyPrimePage = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("penny_prime_collabs")
-      .select(`
-        *,
-        penny_prime_coupons (
-          seller_code, agent_margin_type, agent_margin_value,
-          products (name, price),
-          profiles!penny_prime_coupons_seller_id_fkey (full_name, company_name)
-        ),
-        penny_prime_coupon_uses (id, order_id, agent_margin_amount, used_at)
-      `)
+      .select("*, penny_prime_coupon_uses (id, order_id, agent_margin_amount, used_at)")
       .order("created_at", { ascending: false });
 
     if (error) {
       console.error(error);
-    } else {
-      setCollabs((data as any) ?? []);
+      setLoading(false);
+      return;
     }
+
+    const collabsRaw = (data as any[]) ?? [];
+
+    // Fetch related coupons
+    const couponIds = [...new Set(collabsRaw.map(c => c.coupon_id).filter(Boolean))];
+    let couponMap: Record<string, any> = {};
+    if (couponIds.length > 0) {
+      const { data: coupons } = await supabase
+        .from("penny_prime_coupons")
+        .select("id, seller_code, agent_margin_type, agent_margin_value, seller_id, product_id")
+        .in("id", couponIds);
+
+      if (coupons) {
+        // Fetch seller profiles
+        const sellerIds = [...new Set(coupons.map(c => c.seller_id).filter(Boolean))];
+        const { data: profiles } = sellerIds.length > 0
+          ? await supabase.from("profiles").select("user_id, full_name, company_name").in("user_id", sellerIds)
+          : { data: [] };
+        const profileMap = new Map((profiles ?? []).map(p => [p.user_id, p]));
+
+        // Fetch products (seller_products)
+        const productIds = [...new Set(coupons.map(c => c.product_id).filter(Boolean))];
+        const { data: sellerProds } = productIds.length > 0
+          ? await supabase.from("seller_products").select("id, name, price").in("id", productIds)
+          : { data: [] };
+        // Also try regular products
+        const { data: regularProds } = productIds.length > 0
+          ? await supabase.from("products").select("id, name, price").in("id", productIds)
+          : { data: [] };
+        const prodMap = new Map([
+          ...(regularProds ?? []).map((p: any) => [p.id, p] as [string, any]),
+          ...(sellerProds ?? []).map((p: any) => [p.id, p] as [string, any]),
+        ]);
+
+        coupons.forEach(c => {
+          couponMap[c.id] = {
+            ...c,
+            products: prodMap.get(c.product_id) ?? null,
+            profiles: profileMap.get(c.seller_id) ?? null,
+          };
+        });
+      }
+    }
+
+    const merged = collabsRaw.map(c => ({
+      ...c,
+      penny_prime_coupons: couponMap[c.coupon_id] ?? null,
+    }));
+
+    setCollabs(merged as any);
     setLoading(false);
   };
 
   const fetchAllCoupons = async () => {
     setCouponsLoading(true);
-    const { data, error } = await supabase
+    const { data: coupons, error } = await supabase
       .from("penny_prime_coupons")
-      .select(`
-        *,
-        profiles!penny_prime_coupons_seller_id_fkey (full_name, company_name, mobile_number),
-        seller_products!penny_prime_coupons_product_id_fkey (name, price)
-      `)
+      .select("*")
       .order("created_at", { ascending: false });
-    if (!error) setAllCoupons((data as any) ?? []);
+
+    if (error || !coupons) {
+      console.error(error);
+      setCouponsLoading(false);
+      return;
+    }
+
+    // Fetch seller profiles
+    const sellerIds = [...new Set(coupons.map(c => c.seller_id).filter(Boolean))];
+    const { data: profiles } = sellerIds.length > 0
+      ? await supabase.from("profiles").select("user_id, full_name, company_name, mobile_number").in("user_id", sellerIds)
+      : { data: [] };
+    const profileMap = new Map((profiles ?? []).map(p => [p.user_id, p]));
+
+    // Fetch products — try seller_products first, then regular products
+    const productIds = [...new Set(coupons.map(c => c.product_id).filter(Boolean))];
+    const { data: sellerProds } = productIds.length > 0
+      ? await supabase.from("seller_products").select("id, name, price").in("id", productIds)
+      : { data: [] };
+    const { data: regularProds } = productIds.length > 0
+      ? await supabase.from("products").select("id, name, price").in("id", productIds)
+      : { data: [] };
+    const prodMap = new Map([
+      ...(regularProds ?? []).map((p: any) => [p.id, p] as [string, any]),
+      ...(sellerProds ?? []).map((p: any) => [p.id, p] as [string, any]),
+    ]);
+
+    const enriched = coupons.map(c => ({
+      ...c,
+      profiles: profileMap.get(c.seller_id) ?? null,
+      seller_products: prodMap.get(c.product_id) ?? null,
+    }));
+
+    setAllCoupons(enriched as any);
     setCouponsLoading(false);
   };
 
