@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Star, ArrowLeft, ChevronDown, ChevronUp, Play, Clock } from "lucide-react";
+import { Star, ArrowLeft, ChevronDown, ChevronUp, Play, Clock, Building2, MapPin, Phone, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProductRow from "@/components/ProductRow";
 import { useCart } from "@/hooks/useCart";
@@ -47,6 +47,15 @@ const ProductDetail = () => {
 
   const [productSource, setProductSource] = useState<"product" | "seller_product">("product");
   const [productSellerId, setProductSellerId] = useState<string | undefined>();
+  const [sellerInfo, setSellerInfo] = useState<{
+    company_name: string | null;
+    business_address: string | null;
+    business_city: string | null;
+    business_state: string | null;
+    business_pincode: string | null;
+    business_phone: string | null;
+    business_email: string | null;
+  } | null>(null);
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -144,6 +153,23 @@ const ProductDetail = () => {
 
     fetchGodownStock();
   }, [product, profile?.local_body_id, profile?.ward_number]);
+
+  // Fetch seller info when it's a seller product
+  useEffect(() => {
+    const fetchSellerInfo = async () => {
+      if (!productSellerId) {
+        setSellerInfo(null);
+        return;
+      }
+      const { data } = await supabase
+        .from("profiles")
+        .select("company_name, business_address, business_city, business_state, business_pincode, business_phone, business_email")
+        .eq("user_id", productSellerId)
+        .single();
+      setSellerInfo(data);
+    };
+    fetchSellerInfo();
+  }, [productSellerId]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -343,7 +369,42 @@ const ProductDetail = () => {
                 <div>
                   <h3 className="font-bold text-foreground">All details</h3>
                   <p className="text-xs text-muted-foreground">Features, description and more</p>
-                </div>
+            </div>
+
+            {/* Company Details */}
+            {sellerInfo && (
+              <div className="mt-4 border-t border-border pt-4">
+                <h3 className="flex items-center gap-2 font-bold text-foreground">
+                  <Building2 className="h-4 w-4 text-primary" />
+                  Sold by
+                </h3>
+                {sellerInfo.company_name && (
+                  <p className="mt-2 text-sm font-semibold text-foreground">{sellerInfo.company_name}</p>
+                )}
+                {(sellerInfo.business_address || sellerInfo.business_city) && (
+                  <p className="mt-1 flex items-start gap-1.5 text-xs text-muted-foreground">
+                    <MapPin className="mt-0.5 h-3 w-3 shrink-0" />
+                    <span>
+                      {[sellerInfo.business_address, sellerInfo.business_city, sellerInfo.business_state, sellerInfo.business_pincode]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </span>
+                  </p>
+                )}
+                {sellerInfo.business_phone && (
+                  <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Phone className="h-3 w-3 shrink-0" />
+                    {sellerInfo.business_phone}
+                  </p>
+                )}
+                {sellerInfo.business_email && (
+                  <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Mail className="h-3 w-3 shrink-0" />
+                    {sellerInfo.business_email}
+                  </p>
+                )}
+              </div>
+            )}
                 {showDetails ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
               </button>
               {showDetails && (
