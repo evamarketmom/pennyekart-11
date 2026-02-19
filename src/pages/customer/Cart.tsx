@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Minus, Plus, Trash2, ShieldCheck, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,24 @@ const Cart = () => {
   const [couponError, setCouponError] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [useWallet, setUseWallet] = useState(false);
-  const [walletBalance] = useState(0); // TODO: fetch from user wallet
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [walletId, setWalletId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from("customer_wallets")
+        .select("id, balance")
+        .eq("customer_user_id", user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) {
+            setWalletBalance(data.balance);
+            setWalletId(data.id);
+          }
+        });
+    }
+  }, [user]);
 
   const totalMrp = items.reduce((s, i) => s + i.mrp * i.quantity, 0);
   const totalDiscount = totalMrp - totalPrice;

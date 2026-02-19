@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Package, Clock, CheckCircle, Truck, MapPin, User, Phone, Mail, ChevronRight, ShoppingBag, Heart, Bell } from "lucide-react";
+import { ArrowLeft, Package, Clock, CheckCircle, Truck, MapPin, User, Phone, Mail, ChevronRight, ShoppingBag, Heart, Bell, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -200,6 +200,7 @@ const Profile = () => {
           {[
             { key: "profile", label: "My Profile", icon: User },
             { key: "orders", label: "Orders", icon: Package },
+            { key: "wallet", label: "Wallet", icon: Wallet },
             { key: "addresses", label: "Addresses", icon: MapPin },
             { key: "wishlist", label: "Wishlist", icon: Heart },
             { key: "notifications", label: "Notifications", icon: Bell },
@@ -209,7 +210,13 @@ const Profile = () => {
               size="sm"
               variant={activeSection === sec.key ? "default" : "outline"}
               className="flex items-center gap-1.5 whitespace-nowrap"
-              onClick={() => setActiveSection(sec.key)}
+              onClick={() => {
+                if (sec.key === "wallet") {
+                  navigate("/customer/wallet");
+                } else {
+                  setActiveSection(sec.key);
+                }
+              }}
             >
               <sec.icon className="h-3.5 w-3.5" />
               {sec.label}
