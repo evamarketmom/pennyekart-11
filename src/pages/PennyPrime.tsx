@@ -50,21 +50,45 @@ const PennyPrime = () => {
 
   const fetchCoupons = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data: rawCoupons, error } = await supabase
       .from("penny_prime_coupons")
-      .select(`
-        *,
-        products (id, name, price, mrp, image_url),
-        profiles!penny_prime_coupons_seller_id_fkey (full_name, company_name)
-      `)
+      .select("*")
       .eq("is_active", true)
       .order("created_at", { ascending: false });
 
-    if (error) {
+    if (error || !rawCoupons) {
       console.error(error);
-    } else {
-      setCoupons((data as any) ?? []);
+      setLoading(false);
+      return;
     }
+
+    // Fetch seller profiles
+    const sellerIds = [...new Set(rawCoupons.map(c => c.seller_id).filter(Boolean))];
+    const { data: profiles } = sellerIds.length > 0
+      ? await supabase.from("profiles").select("user_id, full_name, company_name").in("user_id", sellerIds)
+      : { data: [] };
+    const profileMap = new Map((profiles ?? []).map(p => [p.user_id, p]));
+
+    // Fetch products — try seller_products first, fallback to regular products
+    const productIds = [...new Set(rawCoupons.map(c => c.product_id).filter(Boolean))];
+    const { data: sellerProds } = productIds.length > 0
+      ? await supabase.from("seller_products").select("id, name, price, mrp, image_url").in("id", productIds)
+      : { data: [] };
+    const { data: regularProds } = productIds.length > 0
+      ? await supabase.from("products").select("id, name, price, mrp, image_url").in("id", productIds)
+      : { data: [] };
+    const prodMap = new Map([
+      ...(regularProds ?? []).map((p: any) => [p.id, p] as [string, any]),
+      ...(sellerProds ?? []).map((p: any) => [p.id, p] as [string, any]),
+    ]);
+
+    const enriched = rawCoupons.map(c => ({
+      ...c,
+      products: prodMap.get(c.product_id) ?? null,
+      profiles: profileMap.get(c.seller_id) ?? null,
+    }));
+
+    setCoupons(enriched as any);
     setLoading(false);
   };
 
