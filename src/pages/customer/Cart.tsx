@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Minus, Plus, Trash2, ShieldCheck, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -115,12 +115,107 @@ const Cart = () => {
     setCouponError("");
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (!user) {
       toast.error("Please login to place an order");
       navigate("/customer/login");
       return;
     }
+
+    // Check product availability in customer's godown area
+    try {
+      // Get customer profile for location
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("local_body_id, ward_number")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!profile?.local_body_id || !profile?.ward_number) {
+        toast.error("Please update your location in your profile to place orders");
+        return;
+      }
+
+      // Get micro godown IDs
+      const { data: microWards } = await supabase
+        .from("godown_wards")
+        .select("godown_id, godowns!inner(godown_type)")
+        .eq("local_body_id", profile.local_body_id)
+        .eq("ward_number", profile.ward_number)
+        .eq("godowns.godown_type", "micro");
+
+      // Get area godown IDs
+      const { data: areaLocalBodies } = await supabase
+        .from("godown_local_bodies")
+        .select("godown_id, godowns!inner(godown_type)")
+        .eq("local_body_id", profile.local_body_id)
+        .eq("godowns.godown_type", "area");
+
+      const godownIds = new Set<string>();
+      microWards?.forEach(r => godownIds.add(r.godown_id));
+      areaLocalBodies?.forEach(r => godownIds.add(r.godown_id));
+
+      if (godownIds.size === 0) {
+        toast.error("No delivery godown is available in your area");
+        return;
+      }
+
+      // Check regular products (non-seller) against godown_stock
+      const regularItems = items.filter(i => i.source !== "seller_product");
+      if (regularItems.length > 0) {
+        const regularIds = regularItems.map(i => i.id);
+        const { data: stockData } = await supabase
+          .from("godown_stock")
+          .select("product_id, quantity")
+          .in("godown_id", Array.from(godownIds))
+          .in("product_id", regularIds)
+          .gt("quantity", 0);
+
+        // Sum stock per product
+        const stockMap = new Map<string, number>();
+        stockData?.forEach(s => {
+          stockMap.set(s.product_id, (stockMap.get(s.product_id) || 0) + s.quantity);
+        });
+
+        const unavailable = regularItems.filter(i => !stockMap.has(i.id) || (stockMap.get(i.id) || 0) < i.quantity);
+        if (unavailable.length > 0) {
+          const names = unavailable.map(i => i.name).join(", ");
+          toast.error(`Not available in your area: ${names}. Please remove them to proceed.`);
+          return;
+        }
+      }
+
+      // Check seller products against seller_products stock
+      const sellerItems = items.filter(i => i.source === "seller_product");
+      if (sellerItems.length > 0) {
+        const sellerIds = sellerItems.map(i => i.id);
+        const { data: sellerProducts } = await supabase
+          .from("seller_products")
+          .select("id, stock, area_godown_id")
+          .in("id", sellerIds)
+          .eq("is_active", true)
+          .eq("is_approved", true);
+
+        const unavailableSeller = sellerItems.filter(si => {
+          const sp = sellerProducts?.find(p => p.id === si.id);
+          if (!sp) return true;
+          if (sp.stock < si.quantity) return true;
+          // Check if seller product's area godown is in customer's area
+          if (sp.area_godown_id && !godownIds.has(sp.area_godown_id)) return true;
+          return false;
+        });
+
+        if (unavailableSeller.length > 0) {
+          const names = unavailableSeller.map(i => i.name).join(", ");
+          toast.error(`Not available in your area: ${names}. Please remove them to proceed.`);
+          return;
+        }
+      }
+    } catch (err) {
+      toast.error("Failed to verify product availability. Please try again.");
+      return;
+    }
+
     setShowPayment(true);
   };
 

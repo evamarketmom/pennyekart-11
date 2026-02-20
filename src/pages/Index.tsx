@@ -69,6 +69,23 @@ const Index = () => {
     setSelectedCategory(prev => prev === name ? null : name);
   };
 
+  // Group area products by section for logged-in customers
+  const areaBySection = areaProducts.reduce<Record<string, typeof areaProducts>>((acc, p) => {
+    if (p.section && p.section !== "" && p.section !== "seller") {
+      if (!acc[p.section]) acc[p.section] = [];
+      acc[p.section].push(p);
+    }
+    return acc;
+  }, {});
+
+  const sectionLabels: Record<string, string> = {
+    featured: "Featured Products",
+    most_ordered: "Most Ordered Items",
+    new_arrivals: "New Arrivals",
+    low_budget: "Low Budget Picks",
+    sponsors: "Sponsors",
+  };
+
   // Render section-based products (from admin)
   const renderSectionProducts = () => {
     if (sectionLoading) {
@@ -89,17 +106,34 @@ const Index = () => {
       return <ProductRow title={selectedCategory} products={toRowFormat(filtered)} />;
     }
 
-    // For logged-in customers: show area products grouped by category
+    // For logged-in customers: show section rows from area products, then remaining by category
     if (isCustomer) {
       if (areaLoading) {
         return <div className="py-8 text-center text-muted-foreground">Loading products for your area...</div>;
       }
-      if (Object.keys(groupedByCategory).length === 0) {
+      if (areaProducts.length === 0) {
         return <div className="py-8 text-center text-muted-foreground">No products available in your area yet.</div>;
       }
-      return Object.entries(groupedByCategory).map(([cat, items]) =>
+
+      const sectionRows = sectionOrder
+        .filter(s => areaBySection[s]?.length > 0)
+        .map(sec => (
+          <ProductRow key={sec} title={sectionLabels[sec] || sec} products={toRowFormat(areaBySection[sec])} sectionKey={sec} />
+        ));
+
+      // Products without a section, grouped by category
+      const nonsectionProducts = areaProducts.filter(p => !p.section || p.section === "" || p.section === "seller");
+      const nonsectionByCategory = nonsectionProducts.reduce<Record<string, typeof areaProducts>>((acc, p) => {
+        const cat = p.category || "Other";
+        if (!acc[cat]) acc[cat] = [];
+        acc[cat].push(p);
+        return acc;
+      }, {});
+      const categoryRows = Object.entries(nonsectionByCategory).map(([cat, items]) =>
         items.length > 0 ? <ProductRow key={cat} title={cat} products={toRowFormat(items)} /> : null
       );
+
+      return [...sectionRows, ...categoryRows];
     }
 
     // For non-logged-in: show section-based products from DB
