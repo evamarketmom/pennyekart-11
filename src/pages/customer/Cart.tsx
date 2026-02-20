@@ -73,7 +73,7 @@ const Cart = () => {
       // Fetch the coupon separately (no FK join available)
       const { data: coupon } = await supabase
         .from("penny_prime_coupons")
-        .select("customer_discount_type, customer_discount_value, is_active")
+        .select("customer_discount_type, customer_discount_value, is_active, product_id")
         .eq("id", collab.coupon_id)
         .maybeSingle();
 
@@ -83,14 +83,23 @@ const Cart = () => {
         return;
       }
 
-      // Calculate discount
+      // Check if the coupon's product is in the cart
+      const matchingItem = items.find(i => i.id === coupon.product_id);
+      if (!matchingItem) {
+        setCouponError("This coupon is only valid for a specific product that is not in your cart");
+        setCouponLoading(false);
+        return;
+      }
+
+      // Calculate discount only on the matching product's total
+      const productTotal = matchingItem.price * matchingItem.quantity;
       let discount = 0;
       if (coupon.customer_discount_type === "amount") {
         discount = coupon.customer_discount_value;
       } else {
-        discount = (totalPrice * coupon.customer_discount_value) / 100;
+        discount = (productTotal * coupon.customer_discount_value) / 100;
       }
-      discount = Math.min(discount, totalPrice);
+      discount = Math.min(discount, productTotal);
 
       setAppliedCoupon({ code, discount, collabId: collab.id });
     } catch {
