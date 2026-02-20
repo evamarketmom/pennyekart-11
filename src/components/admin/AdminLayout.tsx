@@ -1,12 +1,13 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
   LayoutDashboard, Users, ShieldCheck, Package, ShoppingCart,
-  Image, LogOut, ChevronLeft, Settings, Grid3X3, Wrench, MapPin, Warehouse, ClipboardList, Truck, Store, Star, SlidersHorizontal, BarChart3, Wallet, Handshake,
+  Image, LogOut, ChevronLeft, Settings, Grid3X3, Wrench, MapPin, Warehouse, ClipboardList, Truck, Store, Star, SlidersHorizontal, BarChart3, Wallet, Handshake, Menu, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/admin", perm: null },
@@ -30,11 +31,35 @@ const navItems = [
   { label: "Reports", icon: BarChart3, path: "/admin/reports", perm: "read_orders" },
 ];
 
+const NavItems = ({ items, currentPath, onNavigate }: { items: typeof navItems; currentPath: string; onNavigate?: () => void }) => (
+  <>
+    {items.map((item) => {
+      const active = currentPath === item.path;
+      return (
+        <Link
+          key={item.path}
+          to={item.path}
+          onClick={onNavigate}
+          className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+            active
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          }`}
+        >
+          <item.icon className="h-4 w-4 shrink-0" />
+          {item.label}
+        </Link>
+      );
+    })}
+  </>
+);
+
 const AdminLayout = ({ children }: { children: ReactNode }) => {
   const { signOut, profile } = useAuth();
   const { hasPermission, isSuperAdmin } = usePermissions();
   const location = useLocation();
   const navigate = useNavigate();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const visibleItems = navItems.filter((item) => {
     if (item.superOnly) return isSuperAdmin;
@@ -42,32 +67,18 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
     return true;
   });
 
+  const currentPageLabel = visibleItems.find((i) => i.path === location.pathname)?.label ?? "Admin";
+
   return (
     <div className="flex min-h-screen bg-muted/40">
-      {/* Sidebar */}
+      {/* Desktop Sidebar */}
       <aside className="hidden w-64 flex-col border-r bg-card lg:flex">
         <div className="flex h-16 items-center gap-2 border-b px-6">
           <Settings className="h-5 w-5 text-primary" />
           <span className="text-lg font-bold">Admin Panel</span>
         </div>
-        <nav className="flex-1 space-y-1 p-4">
-          {visibleItems.map((item) => {
-            const active = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  active
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 space-y-1 overflow-y-auto p-4">
+          <NavItems items={visibleItems} currentPath={location.pathname} />
         </nav>
         <div className="border-t p-4">
           <p className="mb-2 truncate text-xs text-muted-foreground">{profile?.email}</p>
@@ -82,43 +93,60 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
         </div>
       </aside>
 
-      {/* Mobile header */}
-      <div className="flex flex-1 flex-col">
-        <header className="flex h-14 items-center justify-between border-b bg-card px-4 lg:hidden">
-          <div className="flex items-center gap-2">
-            <Settings className="h-5 w-5 text-primary" />
-            <span className="font-bold">Admin</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
+      {/* Mobile layout */}
+      <div className="flex flex-1 flex-col lg:hidden">
+        {/* Mobile top bar */}
+        <header className="flex h-14 items-center justify-between border-b bg-card px-4">
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72 p-0">
+              <div className="flex h-14 items-center gap-2 border-b px-6">
+                <Settings className="h-5 w-5 text-primary" />
+                <span className="text-base font-bold">Admin Panel</span>
+              </div>
+              <nav className="flex-1 space-y-1 overflow-y-auto p-4 h-[calc(100vh-8rem)]">
+                <NavItems
+                  items={visibleItems}
+                  currentPath={location.pathname}
+                  onNavigate={() => setMobileOpen(false)}
+                />
+              </nav>
+              <div className="border-t p-4">
+                <p className="mb-2 truncate text-xs text-muted-foreground">{profile?.email}</p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => { navigate("/"); setMobileOpen(false); }}>
+                    <ChevronLeft className="mr-1 h-3 w-3" /> Store
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={signOut}>
+                    <LogOut className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          <span className="font-semibold text-sm">{currentPageLabel}</span>
+
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm" onClick={signOut}>
+            <Button variant="ghost" size="icon" onClick={signOut}>
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </header>
 
-        {/* Mobile nav */}
-        <nav className="flex gap-1 overflow-x-auto border-b bg-card px-2 py-2 lg:hidden">
-          {visibleItems.map((item) => {
-            const active = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                  active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                }`}
-              >
-                <item.icon className="h-3.5 w-3.5" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+        <main className="flex-1 p-4">{children}</main>
+      </div>
 
-        <main className="flex-1 p-4 lg:p-6">{children}</main>
+      {/* Desktop main content */}
+      <div className="hidden flex-1 flex-col lg:flex">
+        <main className="flex-1 p-6">{children}</main>
       </div>
     </div>
   );
