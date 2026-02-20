@@ -1,4 +1,4 @@
-import { Search, User, Wallet, ShoppingCart, LogOut, Package, MapPin, Heart, Bell, ChevronDown } from "lucide-react";
+import { Search, User, Wallet, ShoppingCart, LogOut, Package, MapPin, Heart, Bell, ChevronDown, Tag } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
@@ -57,6 +57,8 @@ const SearchBar = () => {
   const menuItems = [
     { icon: User, label: "My Profile", action: () => navigate("/customer/profile?tab=profile") },
     { icon: Package, label: "Orders", action: () => navigate("/customer/profile?tab=orders") },
+    { icon: Wallet, label: "Wallet", action: () => navigate("/customer/wallet") },
+    { icon: Tag, label: "Penny Prime", action: () => navigate("/penny-prime") },
     { icon: MapPin, label: "Saved Addresses", action: () => navigate("/customer/profile?tab=addresses") },
     { icon: Heart, label: "Wishlist", action: () => navigate("/customer/profile?tab=wishlist") },
     { icon: Bell, label: "Notifications", action: () => navigate("/customer/profile?tab=notifications") },
@@ -129,7 +131,7 @@ const SearchBar = () => {
               <span>Login</span>
             </button>
           )}
-          <button className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted">
+          <button onClick={() => navigate("/customer/wallet")} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted">
             <Wallet className="h-4 w-4" />
             <span>Wallet</span>
           </button>
