@@ -164,7 +164,12 @@ const DeliveryOrders = ({ orders, userId, onRefresh }: Props) => {
                 <TableCell className="font-mono text-xs">{o.id.slice(0, 8)}…</TableCell>
                 <TableCell>₹{o.total}</TableCell>
                 <TableCell className="text-sm max-w-[200px] truncate">{o.shipping_address ?? "—"}</TableCell>
-                <TableCell><Badge variant={statusColor(o.status) as any}>{o.status.replace(/_/g, " ")}</Badge></TableCell>
+                <TableCell>
+                  <div className="flex flex-col gap-1">
+                    <Badge variant={statusColor(o.status) as any}>{o.status.replace(/_/g, " ")}</Badge>
+                    {(o as any).is_self_delivery && <Badge variant="outline" className="text-xs w-fit"><Truck className="h-3 w-3 mr-1" />Self Delivery</Badge>}
+                  </div>
+                </TableCell>
                 <TableCell className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleDateString()}</TableCell>
                 {showAction && (
                   <TableCell>

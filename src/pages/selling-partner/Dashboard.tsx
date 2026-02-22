@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Package, Plus, LogOut, Store, ShoppingCart, Wallet, Star, PackagePlus, Pencil, BarChart3, TrendingUp, MapPin, ArrowDownLeft, Clock, Settings, Tag } from "lucide-react";
+import { Package, Plus, LogOut, Store, ShoppingCart, Wallet, Star, PackagePlus, Pencil, BarChart3, TrendingUp, MapPin, ArrowDownLeft, Clock, Settings, Tag, Truck } from "lucide-react";
 import PennyPrimeCoupons from "@/components/selling-partner/PennyPrimeCoupons";
 import { useToast } from "@/hooks/use-toast";
 import ImageUpload from "@/components/admin/ImageUpload";
@@ -66,6 +66,8 @@ interface WalletTxn {
 const STATUS_LABELS: Record<string, string> = {
   seller_confirmation_pending: "Awaiting Your Confirmation",
   seller_accepted: "Confirmed - Awaiting Delivery",
+  self_delivery_pickup: "Self Delivery - Picked Up",
+  self_delivery_shipped: "Self Delivery - In Transit",
   pending: "Order Placed", packed: "Packed", pickup: "Picked Up",
   accepted: "Accepted", shipped: "Shipped", delivery_pending: "Delivery Pending", delivered: "Delivered",
 };
@@ -672,11 +674,26 @@ const SellingPartnerDashboard = () => {
                             <TableHead>Status</TableHead>
                             <TableHead>Total</TableHead>
                             <TableHead>Date</TableHead>
+                            <TableHead>Action</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {otherOrders.map(o => {
                             const myItems = Array.isArray(o.items) ? o.items.filter((item: any) => products.some(p => p.id === item.id)) : [];
+                            const isSelfDelivery = (o as any).is_self_delivery === true;
+                            const selfDeliveryNextStatus = (() => {
+                              if (!isSelfDelivery) return null;
+                              if (o.status === "seller_accepted") return "self_delivery_pickup";
+                              if (o.status === "self_delivery_pickup") return "self_delivery_shipped";
+                              if (o.status === "self_delivery_shipped") return "delivered";
+                              return null;
+                            })();
+                            const selfDeliveryLabel = (() => {
+                              if (selfDeliveryNextStatus === "self_delivery_pickup") return "Picked Up";
+                              if (selfDeliveryNextStatus === "self_delivery_shipped") return "In Transit";
+                              if (selfDeliveryNextStatus === "delivered") return "Mark Delivered";
+                              return null;
+                            })();
                             return (
                               <TableRow key={o.id}>
                                 <TableCell className="font-mono text-xs">{o.id.slice(0, 8)}</TableCell>
@@ -684,12 +701,40 @@ const SellingPartnerDashboard = () => {
                                   {myItems.length > 0 ? myItems.map((i: any) => `${i.name} ×${i.quantity || 1}`).join(", ") : (Array.isArray(o.items) ? o.items.map((i: any) => `${i.name} ×${i.quantity || 1}`).join(", ") : "-")}
                                 </TableCell>
                                 <TableCell>
-                                  <Badge variant={o.status === "delivered" ? "default" : "secondary"}>
-                                    {STATUS_LABELS[o.status] || o.status.replace(/_/g, " ")}
-                                  </Badge>
+                                  <div className="flex flex-col gap-1">
+                                    <Badge variant={o.status === "delivered" ? "default" : "secondary"}>
+                                      {STATUS_LABELS[o.status] || o.status.replace(/_/g, " ")}
+                                    </Badge>
+                                    {isSelfDelivery && <Badge variant="outline" className="text-xs w-fit"><Truck className="h-3 w-3 mr-1" />Self Delivery</Badge>}
+                                  </div>
                                 </TableCell>
                                 <TableCell>₹{o.total}</TableCell>
                                 <TableCell className="text-sm text-muted-foreground">{new Date(o.created_at).toLocaleDateString()}</TableCell>
+                                <TableCell>
+                                  {/* Self Delivery button for seller_accepted orders not yet marked */}
+                                  {o.status === "seller_accepted" && !isSelfDelivery && (
+                                    <Button size="sm" variant="outline" onClick={async () => {
+                                      const { error } = await supabase.from("orders").update({ is_self_delivery: true } as any).eq("id", o.id);
+                                      if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
+                                      else { toast({ title: "Marked as Self Delivery!" }); fetchOrders(products); }
+                                    }}>
+                                      <Truck className="h-3.5 w-3.5 mr-1" /> Self Deliver
+                                    </Button>
+                                  )}
+                                  {/* Progress self-delivery status */}
+                                  {isSelfDelivery && selfDeliveryNextStatus && (
+                                    <Button size="sm" onClick={async () => {
+                                      const { error } = await supabase.from("orders").update({ status: selfDeliveryNextStatus } as any).eq("id", o.id);
+                                      if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
+                                      else { toast({ title: `Order ${selfDeliveryNextStatus.replace(/_/g, " ")}` }); fetchOrders(products); }
+                                    }}>
+                                      {selfDeliveryLabel}
+                                    </Button>
+                                  )}
+                                  {o.status === "delivered" && isSelfDelivery && (
+                                    <span className="text-xs text-muted-foreground">Self Delivered ✓</span>
+                                  )}
+                                </TableCell>
                               </TableRow>
                             );
                           })}

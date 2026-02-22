@@ -546,6 +546,7 @@ export type Database = {
           created_at: string
           godown_id: string | null
           id: string
+          is_self_delivery: boolean
           items: Json
           seller_id: string | null
           seller_product_id: string | null
@@ -560,6 +561,7 @@ export type Database = {
           created_at?: string
           godown_id?: string | null
           id?: string
+          is_self_delivery?: boolean
           items?: Json
           seller_id?: string | null
           seller_product_id?: string | null
@@ -574,6 +576,7 @@ export type Database = {
           created_at?: string
           godown_id?: string | null
           id?: string
+          is_self_delivery?: boolean
           items?: Json
           seller_id?: string | null
           seller_product_id?: string | null
@@ -1370,6 +1373,7 @@ export type Database = {
           created_at: string
           godown_id: string | null
           id: string
+          is_self_delivery: boolean
           items: Json
           seller_id: string | null
           seller_product_id: string | null
