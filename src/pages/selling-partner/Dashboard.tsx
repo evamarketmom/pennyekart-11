@@ -16,6 +16,7 @@ import { Package, Plus, LogOut, Store, ShoppingCart, Wallet, Star, PackagePlus, 
 import PennyPrimeCoupons from "@/components/selling-partner/PennyPrimeCoupons";
 import { useToast } from "@/hooks/use-toast";
 import ImageUpload from "@/components/admin/ImageUpload";
+import ProductVariants from "@/components/admin/ProductVariants";
 import logo from "@/assets/logo.png";
 
 interface SellerProduct {
@@ -40,7 +41,7 @@ interface SellerProduct {
 }
 
 interface Godown { id: string; name: string; }
-interface Category { id: string; name: string; category_type: string; }
+interface Category { id: string; name: string; category_type: string; variation_type: string | null; }
 
 interface Order {
   id: string;
@@ -142,7 +143,7 @@ const SellingPartnerDashboard = () => {
   };
 
   const fetchCategories = async () => {
-    const { data } = await supabase.from("categories").select("id, name, category_type").eq("is_active", true).order("sort_order");
+    const { data } = await supabase.from("categories").select("id, name, category_type, variation_type").eq("is_active", true).order("sort_order");
     if (data) setCategories(data as Category[]);
   };
 
@@ -482,6 +483,13 @@ const SellingPartnerDashboard = () => {
                       </div>
                       <Switch checked={form.is_featured} onCheckedChange={v => setForm({ ...form, is_featured: v })} />
                     </div>
+                    {(() => {
+                      const selectedCat = categories.find(c => c.name === form.category);
+                      if (selectedCat?.variation_type) {
+                        return <ProductVariants productId={null} variationType={selectedCat.variation_type} basePrice={parseFloat(form.price) || 0} baseMrp={parseFloat(form.mrp) || 0} />;
+                      }
+                      return null;
+                    })()}
                     <Button type="submit" className="w-full" disabled={assignedGodowns.length === 0}>Submit for Approval</Button>
                   </form>
                 </DialogContent>
@@ -574,12 +582,19 @@ const SellingPartnerDashboard = () => {
                   <ImageUpload bucket="products" value={editForm.image_url} onChange={url => setEditForm({ ...editForm, image_url: url })} label="Image 1" />
                   <div><Label>Image 2 (URL)</Label><Input value={editForm.image_url_2} onChange={e => setEditForm({ ...editForm, image_url_2: e.target.value })} /></div>
                   <div><Label>Image 3 (URL)</Label><Input value={editForm.image_url_3} onChange={e => setEditForm({ ...editForm, image_url_3: e.target.value })} /></div>
-                  <div className="flex items-center gap-2 rounded-lg border p-3">
-                    <Star className="h-4 w-4 text-yellow-500" />
-                    <div className="flex-1"><Label className="text-sm font-medium">Featured Product</Label></div>
-                    <Switch checked={editForm.is_featured} onCheckedChange={v => setEditForm({ ...editForm, is_featured: v })} />
-                  </div>
-                  <Button type="submit" className="w-full">Save Changes</Button>
+                   <div className="flex items-center gap-2 rounded-lg border p-3">
+                     <Star className="h-4 w-4 text-yellow-500" />
+                     <div className="flex-1"><Label className="text-sm font-medium">Featured Product</Label></div>
+                     <Switch checked={editForm.is_featured} onCheckedChange={v => setEditForm({ ...editForm, is_featured: v })} />
+                   </div>
+                    {(() => {
+                      const selectedCat = categories.find(c => c.name === editForm.category);
+                      if (selectedCat?.variation_type) {
+                        return <ProductVariants productId={editProduct?.id ?? null} variationType={selectedCat.variation_type} basePrice={parseFloat(editForm.price) || 0} baseMrp={parseFloat(editForm.mrp) || 0} />;
+                      }
+                      return null;
+                    })()}
+                   <Button type="submit" className="w-full">Save Changes</Button>
                 </form>
               </DialogContent>
             </Dialog>
