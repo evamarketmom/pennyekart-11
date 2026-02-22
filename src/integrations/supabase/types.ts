@@ -92,6 +92,7 @@ export type Database = {
           name: string
           sort_order: number
           updated_at: string
+          variation_type: string | null
         }
         Insert: {
           category_type?: string
@@ -104,6 +105,7 @@ export type Database = {
           name: string
           sort_order?: number
           updated_at?: string
+          variation_type?: string | null
         }
         Update: {
           category_type?: string
@@ -116,6 +118,7 @@ export type Database = {
           name?: string
           sort_order?: number
           updated_at?: string
+          variation_type?: string | null
         }
         Relationships: []
       }
@@ -752,6 +755,57 @@ export type Database = {
           feature?: string
           id?: string
           name?: string
+        }
+        Relationships: []
+      }
+      product_variants: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          is_default: boolean
+          mrp: number
+          price: number
+          price_adjustment: number
+          product_id: string
+          product_type: string
+          sort_order: number
+          stock: number
+          updated_at: string
+          variant_label: string
+          variant_value: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          mrp?: number
+          price?: number
+          price_adjustment?: number
+          product_id: string
+          product_type?: string
+          sort_order?: number
+          stock?: number
+          updated_at?: string
+          variant_label: string
+          variant_value?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          mrp?: number
+          price?: number
+          price_adjustment?: number
+          product_id?: string
+          product_type?: string
+          sort_order?: number
+          stock?: number
+          updated_at?: string
+          variant_label?: string
+          variant_value?: string | null
         }
         Relationships: []
       }

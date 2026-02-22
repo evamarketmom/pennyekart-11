@@ -17,9 +17,18 @@ import ImageUpload from "@/components/admin/ImageUpload";
 interface Category {
   id: string; name: string; icon: string | null; item_count: string | null;
   sort_order: number; is_active: boolean; category_type: string; image_url: string | null;
+  variation_type: string | null;
 }
 
-const emptyCategory = { name: "", icon: "", item_count: "", sort_order: 0, is_active: true, category_type: "general", image_url: "" };
+const VARIATION_TYPES = [
+  { value: "none", label: "No Variations" },
+  { value: "size", label: "Size (S, M, L, XL...)" },
+  { value: "weight", label: "Weight (g / kg)" },
+  { value: "color", label: "Color" },
+  { value: "measurement", label: "Measurement (cm / inches)" },
+];
+
+const emptyCategory = { name: "", icon: "", item_count: "", sort_order: 0, is_active: true, category_type: "general", image_url: "", variation_type: "none" };
 
 const CategoriesPage = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -40,7 +49,8 @@ const CategoriesPage = () => {
   const filtered = categories.filter((c) => c.category_type === tab);
 
   const handleSave = async () => {
-    const payload = { ...form, category_type: tab };
+    const { variation_type, ...rest } = form;
+    const payload = { ...rest, category_type: tab, variation_type: variation_type === "none" ? null : variation_type };
     if (editId) {
       const { error } = await supabase.from("categories").update(payload).eq("id", editId);
       if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
@@ -57,7 +67,7 @@ const CategoriesPage = () => {
   };
 
   const openEdit = (c: Category) => {
-    setForm({ name: c.name, icon: c.icon ?? "", item_count: c.item_count ?? "", sort_order: c.sort_order, is_active: c.is_active, category_type: c.category_type, image_url: c.image_url ?? "" });
+    setForm({ name: c.name, icon: c.icon ?? "", item_count: c.item_count ?? "", sort_order: c.sort_order, is_active: c.is_active, category_type: c.category_type, image_url: c.image_url ?? "", variation_type: c.variation_type ?? "none" });
     setEditId(c.id); setOpen(true);
   };
 
@@ -80,6 +90,17 @@ const CategoriesPage = () => {
                   <div><Label>Item Count</Label><Input value={form.item_count} onChange={(e) => setForm({ ...form, item_count: e.target.value })} placeholder="e.g. 2,400+" /></div>
                 )}
                 <div><Label>Sort Order</Label><Input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: +e.target.value })} /></div>
+                <div>
+                  <Label>Variation Type</Label>
+                  <Select value={form.variation_type} onValueChange={(v) => setForm({ ...form, variation_type: v })}>
+                    <SelectTrigger><SelectValue placeholder="Select variation type" /></SelectTrigger>
+                    <SelectContent>
+                      {VARIATION_TYPES.map((vt) => (
+                        <SelectItem key={vt.value} value={vt.value}>{vt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="flex items-center gap-2"><Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} /><Label>Active</Label></div>
                 <Button className="w-full" onClick={handleSave}>Save</Button>
               </div>
@@ -101,6 +122,7 @@ const CategoriesPage = () => {
                   <TableHead>Name</TableHead>
                   <TableHead>Icon</TableHead>
                   {tab === "general" && <TableHead>Items</TableHead>}
+                  <TableHead>Variation</TableHead>
                   <TableHead>Order</TableHead>
                   <TableHead>Active</TableHead>
                   <TableHead className="w-24">Actions</TableHead>
@@ -112,6 +134,7 @@ const CategoriesPage = () => {
                     <TableCell className="font-medium">{c.name}</TableCell>
                     <TableCell>{c.icon}</TableCell>
                     {tab === "general" && <TableCell>{c.item_count}</TableCell>}
+                    <TableCell className="text-xs">{VARIATION_TYPES.find(v => v.value === (c.variation_type || "none"))?.label || "—"}</TableCell>
                     <TableCell>{c.sort_order}</TableCell>
                     <TableCell>{c.is_active ? "✓" : "✗"}</TableCell>
                     <TableCell>
