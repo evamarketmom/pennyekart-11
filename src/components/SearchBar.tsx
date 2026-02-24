@@ -1,13 +1,15 @@
-import { Search, User, Wallet, ShoppingCart, LogOut, Package, MapPin, Heart, Bell, ChevronDown, Tag } from "lucide-react";
+import { Search, User, Wallet, ShoppingCart, LogOut, Package, MapPin, Heart, Bell, ChevronDown, Tag, Download } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import DownloadAppDialog from "@/components/DownloadAppDialog";
 
 const SearchBar = () => {
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const mobileButtonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -63,6 +65,7 @@ const SearchBar = () => {
     { icon: MapPin, label: "Saved Addresses", action: () => navigate("/customer/profile?tab=addresses") },
     { icon: Heart, label: "Wishlist", action: () => navigate("/customer/profile?tab=wishlist") },
     { icon: Bell, label: "Notifications", action: () => navigate("/customer/profile?tab=notifications") },
+    { icon: Download, label: "Download App", action: () => setDownloadDialogOpen(true) },
   ];
 
   const dropdownPortal = dropdownOpen && isLoggedIn
@@ -164,6 +167,7 @@ const SearchBar = () => {
 
       {/* Portal-rendered dropdown */}
       {dropdownPortal}
+      <DownloadAppDialog open={downloadDialogOpen} onOpenChange={setDownloadDialogOpen} />
     </div>
   );
 };
