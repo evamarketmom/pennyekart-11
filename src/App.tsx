@@ -6,7 +6,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from "@/hooks/useCart";
+import { LiteModeProvider, useLiteMode } from "@/hooks/useLiteMode";
 import Index from "./pages/Index";
+import LiteIndex from "./pages/LiteIndex";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import SplashScreen from "./components/SplashScreen";
@@ -52,6 +54,70 @@ import CustomerWallet from "./pages/customer/Wallet";
 
 const queryClient = new QueryClient();
 
+const AppRoutes = () => {
+  const { liteMode } = useLiteMode();
+
+  return (
+    <Routes>
+      <Route path="/" element={liteMode ? <LiteIndex /> : <Index />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/admin" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/admin/users" element={<ProtectedRoute requirePermission="read_users"><UsersPage /></ProtectedRoute>} />
+      <Route path="/admin/roles" element={<ProtectedRoute requireSuperAdmin><RolesPage /></ProtectedRoute>} />
+      <Route path="/admin/products" element={<ProtectedRoute requirePermission="read_products"><ProductsPage /></ProtectedRoute>} />
+      <Route path="/admin/orders" element={<ProtectedRoute requirePermission="read_orders"><OrdersPage /></ProtectedRoute>} />
+      <Route path="/admin/banners" element={<ProtectedRoute requirePermission="read_banners"><BannersPage /></ProtectedRoute>} />
+      <Route path="/admin/categories" element={<ProtectedRoute requirePermission="read_categories"><CategoriesPage /></ProtectedRoute>} />
+      <Route path="/admin/services" element={<ProtectedRoute requirePermission="read_services"><ServicesPage /></ProtectedRoute>} />
+      <Route path="/admin/locations" element={<ProtectedRoute requirePermission="read_locations"><LocationsPage /></ProtectedRoute>} />
+      <Route path="/admin/godowns" element={<ProtectedRoute requirePermission="read_godowns"><GodownsPage /></ProtectedRoute>} />
+      <Route path="/admin/purchase" element={<ProtectedRoute requirePermission="create_stock"><PurchasePage /></ProtectedRoute>} />
+      <Route path="/admin/delivery" element={<ProtectedRoute requirePermission="read_users"><DeliveryManagementPage /></ProtectedRoute>} />
+      <Route path="/admin/sellers" element={<ProtectedRoute requirePermission="read_users"><SellingPartnersPage /></ProtectedRoute>} />
+      <Route path="/admin/offers" element={<ProtectedRoute requirePermission="read_products"><OffersPage /></ProtectedRoute>} />
+      <Route path="/services" element={<PennyServices />} />
+      <Route path="/services/:id" element={<ServiceDetail />} />
+      <Route path="/pennycarbs" element={<PennyCarbs />} />
+      <Route path="/admin/stock-control" element={<ProtectedRoute requirePermission="read_stock"><StockControlPage /></ProtectedRoute>} />
+      <Route path="/admin/settings" element={<ProtectedRoute requirePermission="read_products"><AppSettingsPage /></ProtectedRoute>} />
+      <Route path="/admin/reports" element={<ProtectedRoute requirePermission="read_orders"><ReportsPage /></ProtectedRoute>} />
+      <Route path="/admin/wallets" element={<ProtectedRoute requirePermission="read_users"><WalletManagementPage /></ProtectedRoute>} />
+      <Route path="/admin/penny-prime" element={<ProtectedRoute requirePermission="read_orders"><PennyPrimePage /></ProtectedRoute>} />
+      <Route path="/penny-prime" element={<PennyPrimePublic />} />
+
+      {/* Delivery Staff */}
+      <Route path="/delivery-staff/signup" element={<DeliveryStaffSignup />} />
+      <Route path="/delivery-staff/login" element={<DeliveryStaffLogin />} />
+      <Route path="/delivery-staff/forgot-password" element={<DeliveryStaffForgotPassword />} />
+      <Route path="/delivery-staff/dashboard" element={
+        <ProtectedPartnerRoute userType="delivery_staff" loginPath="/delivery-staff/login">
+          <DeliveryStaffDashboard />
+        </ProtectedPartnerRoute>
+      } />
+
+      {/* Customer */}
+      <Route path="/product/:id" element={<ProductDetail />} />
+      <Route path="/cart" element={<Cart />} />
+      <Route path="/customer/signup" element={<CustomerSignup />} />
+      <Route path="/customer/login" element={<CustomerLogin />} />
+      <Route path="/customer/profile" element={<CustomerProfile />} />
+      <Route path="/customer/wallet" element={<CustomerWallet />} />
+
+      {/* Selling Partner */}
+      <Route path="/selling-partner/signup" element={<SellingPartnerSignup />} />
+      <Route path="/selling-partner/login" element={<SellingPartnerLogin />} />
+      <Route path="/selling-partner/forgot-password" element={<SellingPartnerForgotPassword />} />
+      <Route path="/selling-partner/dashboard" element={
+        <ProtectedPartnerRoute userType="selling_partner" loginPath="/selling-partner/login">
+          <SellingPartnerDashboard />
+        </ProtectedPartnerRoute>
+      } />
+
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
+
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
   const hideSplash = useCallback(() => setShowSplash(false), []);
@@ -59,72 +125,18 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        {showSplash && <SplashScreen onComplete={hideSplash} />}
-        <BrowserRouter>
-          <AuthProvider>
-            <CartProvider>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/admin" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/admin/users" element={<ProtectedRoute requirePermission="read_users"><UsersPage /></ProtectedRoute>} />
-              <Route path="/admin/roles" element={<ProtectedRoute requireSuperAdmin><RolesPage /></ProtectedRoute>} />
-              <Route path="/admin/products" element={<ProtectedRoute requirePermission="read_products"><ProductsPage /></ProtectedRoute>} />
-              <Route path="/admin/orders" element={<ProtectedRoute requirePermission="read_orders"><OrdersPage /></ProtectedRoute>} />
-              <Route path="/admin/banners" element={<ProtectedRoute requirePermission="read_banners"><BannersPage /></ProtectedRoute>} />
-              <Route path="/admin/categories" element={<ProtectedRoute requirePermission="read_categories"><CategoriesPage /></ProtectedRoute>} />
-              <Route path="/admin/services" element={<ProtectedRoute requirePermission="read_services"><ServicesPage /></ProtectedRoute>} />
-              <Route path="/admin/locations" element={<ProtectedRoute requirePermission="read_locations"><LocationsPage /></ProtectedRoute>} />
-              <Route path="/admin/godowns" element={<ProtectedRoute requirePermission="read_godowns"><GodownsPage /></ProtectedRoute>} />
-              <Route path="/admin/purchase" element={<ProtectedRoute requirePermission="create_stock"><PurchasePage /></ProtectedRoute>} />
-              <Route path="/admin/delivery" element={<ProtectedRoute requirePermission="read_users"><DeliveryManagementPage /></ProtectedRoute>} />
-              <Route path="/admin/sellers" element={<ProtectedRoute requirePermission="read_users"><SellingPartnersPage /></ProtectedRoute>} />
-              <Route path="/admin/offers" element={<ProtectedRoute requirePermission="read_products"><OffersPage /></ProtectedRoute>} />
-              <Route path="/services" element={<PennyServices />} />
-              <Route path="/services/:id" element={<ServiceDetail />} />
-              <Route path="/pennycarbs" element={<PennyCarbs />} />
-              <Route path="/admin/stock-control" element={<ProtectedRoute requirePermission="read_stock"><StockControlPage /></ProtectedRoute>} />
-              <Route path="/admin/settings" element={<ProtectedRoute requirePermission="read_products"><AppSettingsPage /></ProtectedRoute>} />
-              <Route path="/admin/reports" element={<ProtectedRoute requirePermission="read_orders"><ReportsPage /></ProtectedRoute>} />
-              <Route path="/admin/wallets" element={<ProtectedRoute requirePermission="read_users"><WalletManagementPage /></ProtectedRoute>} />
-              <Route path="/admin/penny-prime" element={<ProtectedRoute requirePermission="read_orders"><PennyPrimePage /></ProtectedRoute>} />
-              <Route path="/penny-prime" element={<PennyPrimePublic />} />
-
-              {/* Delivery Staff */}
-              <Route path="/delivery-staff/signup" element={<DeliveryStaffSignup />} />
-              <Route path="/delivery-staff/login" element={<DeliveryStaffLogin />} />
-              <Route path="/delivery-staff/forgot-password" element={<DeliveryStaffForgotPassword />} />
-              <Route path="/delivery-staff/dashboard" element={
-                <ProtectedPartnerRoute userType="delivery_staff" loginPath="/delivery-staff/login">
-                  <DeliveryStaffDashboard />
-                </ProtectedPartnerRoute>
-              } />
-
-              {/* Customer */}
-              <Route path="/product/:id" element={<ProductDetail />} />
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/customer/signup" element={<CustomerSignup />} />
-              <Route path="/customer/login" element={<CustomerLogin />} />
-              <Route path="/customer/profile" element={<CustomerProfile />} />
-              <Route path="/customer/wallet" element={<CustomerWallet />} />
-
-              {/* Selling Partner */}
-              <Route path="/selling-partner/signup" element={<SellingPartnerSignup />} />
-              <Route path="/selling-partner/login" element={<SellingPartnerLogin />} />
-              <Route path="/selling-partner/forgot-password" element={<SellingPartnerForgotPassword />} />
-              <Route path="/selling-partner/dashboard" element={
-                <ProtectedPartnerRoute userType="selling_partner" loginPath="/selling-partner/login">
-                  <SellingPartnerDashboard />
-                </ProtectedPartnerRoute>
-              } />
-
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            </CartProvider>
-          </AuthProvider>
-        </BrowserRouter>
+        <LiteModeProvider>
+          <Toaster />
+          <Sonner />
+          {showSplash && <SplashScreen onComplete={hideSplash} />}
+          <BrowserRouter>
+            <AuthProvider>
+              <CartProvider>
+                <AppRoutes />
+              </CartProvider>
+            </AuthProvider>
+          </BrowserRouter>
+        </LiteModeProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

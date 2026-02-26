@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useLiteMode } from "@/hooks/useLiteMode";
+import { Zap } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 const CUSTOMER_PASSWORD = "pennyekart_customer_2024";
@@ -13,8 +15,11 @@ const CUSTOMER_PASSWORD = "pennyekart_customer_2024";
 const CustomerLogin = () => {
   const [mobile, setMobile] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showLiteSuggestion, setShowLiteSuggestion] = useState(false);
+  const [failCount, setFailCount] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { setLiteMode } = useLiteMode();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +34,9 @@ const CustomerLogin = () => {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password: CUSTOMER_PASSWORD });
 
       if (error) {
+        const newCount = failCount + 1;
+        setFailCount(newCount);
+        if (newCount >= 2) setShowLiteSuggestion(true);
         toast({ title: "Login failed", description: "Mobile number not registered or invalid.", variant: "destructive" });
       } else {
         const { data: profile } = await supabase
@@ -48,6 +56,7 @@ const CustomerLogin = () => {
         }
       }
     } catch (err) {
+      setShowLiteSuggestion(true);
       toast({ title: "Connection error", description: "Please check your internet connection and try again.", variant: "destructive" });
     }
     setLoading(false);
@@ -73,6 +82,29 @@ const CustomerLogin = () => {
             <p className="text-center text-sm text-muted-foreground">
               New customer? <Link to="/customer/signup" className="text-primary underline">Sign up here</Link>
             </p>
+            {showLiteSuggestion && (
+              <div className="rounded-lg border border-accent bg-accent/10 p-3 text-center">
+                <p className="text-sm font-medium text-foreground mb-2">
+                  Having trouble? Try our Lite version
+                </p>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Faster loading, works better on older phones
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => {
+                    setLiteMode(true);
+                    navigate("/");
+                  }}
+                >
+                  <Zap className="h-3.5 w-3.5" />
+                  Switch to Lite Version
+                </Button>
+              </div>
+            )}
             <div className="flex justify-center gap-4 text-xs text-muted-foreground pt-2">
               <Link to="/selling-partner/login" className="text-primary underline">Selling Partner Login</Link>
               <span>·</span>
