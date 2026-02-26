@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
 
@@ -28,6 +27,8 @@ interface Props {
   description: string;
 }
 
+const nativeSelectClass = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+
 const PartnerSignup = ({ userType, title, description }: Props) => {
   const [fullName, setFullName] = useState("");
   const [mobile, setMobile] = useState("");
@@ -44,16 +45,21 @@ const PartnerSignup = ({ userType, title, description }: Props) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    supabase.from("locations_districts").select("id, name").eq("is_active", true).order("sort_order").then(({ data }) => {
-      if (data) setDistricts(data);
-    });
+    supabase.from("locations_districts").select("id, name").eq("is_active", true).order("sort_order")
+      .then(({ data, error }) => {
+        if (error) console.error("District fetch error:", error);
+        if (data) setDistricts(data);
+      });
   }, []);
 
   useEffect(() => {
     if (!districtId) { setLocalBodies([]); return; }
     supabase.from("locations_local_bodies").select("id, name, body_type, ward_count, district_id")
       .eq("district_id", districtId).eq("is_active", true).order("sort_order")
-      .then(({ data }) => { if (data) setLocalBodies(data as LocalBody[]); });
+      .then(({ data, error }) => {
+        if (error) console.error("Local body fetch error:", error);
+        if (data) setLocalBodies(data as LocalBody[]);
+      });
   }, [districtId]);
 
   const selectedLocalBody = localBodies.find(lb => lb.id === localBodyId);
@@ -122,31 +128,42 @@ const PartnerSignup = ({ userType, title, description }: Props) => {
               <Input id="dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)} required />
             </div>
             <div>
-              <Label>District</Label>
-              <Select value={districtId} onValueChange={(v) => { setDistrictId(v); setLocalBodyId(""); setWardNumber(""); }}>
-                <SelectTrigger><SelectValue placeholder="Select district" /></SelectTrigger>
-                <SelectContent>
-                  {districts.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="district">District</Label>
+              <select
+                id="district"
+                value={districtId}
+                onChange={(e) => { setDistrictId(e.target.value); setLocalBodyId(""); setWardNumber(""); }}
+                className={nativeSelectClass}
+              >
+                <option value="">Select district</option>
+                {districts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
             </div>
             <div>
-              <Label>Panchayath / Municipality</Label>
-              <Select value={localBodyId} onValueChange={(v) => { setLocalBodyId(v); setWardNumber(""); }} disabled={!districtId}>
-                <SelectTrigger><SelectValue placeholder="Select panchayath" /></SelectTrigger>
-                <SelectContent>
-                  {localBodies.map(lb => <SelectItem key={lb.id} value={lb.id}>{lb.name} ({lb.body_type})</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="localBody">Panchayath / Municipality</Label>
+              <select
+                id="localBody"
+                value={localBodyId}
+                onChange={(e) => { setLocalBodyId(e.target.value); setWardNumber(""); }}
+                disabled={!districtId}
+                className={nativeSelectClass}
+              >
+                <option value="">Select panchayath</option>
+                {localBodies.map(lb => <option key={lb.id} value={lb.id}>{lb.name} ({lb.body_type})</option>)}
+              </select>
             </div>
             <div>
-              <Label>Ward</Label>
-              <Select value={wardNumber} onValueChange={setWardNumber} disabled={!localBodyId}>
-                <SelectTrigger><SelectValue placeholder="Select ward" /></SelectTrigger>
-                <SelectContent>
-                  {wardOptions.map(w => <SelectItem key={w} value={String(w)}>Ward {w}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="ward">Ward</Label>
+              <select
+                id="ward"
+                value={wardNumber}
+                onChange={(e) => setWardNumber(e.target.value)}
+                disabled={!localBodyId}
+                className={nativeSelectClass}
+              >
+                <option value="">Select ward</option>
+                {wardOptions.map(w => <option key={w} value={String(w)}>Ward {w}</option>)}
+              </select>
             </div>
             <div>
               <Label htmlFor="password">Password</Label>
