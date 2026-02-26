@@ -59,17 +59,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Set up auth listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
         if (!mounted) return;
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          // Use await instead of setTimeout for reliability
-          await fetchProfile(session.user.id);
+          // Use setTimeout to avoid deadlock - don't await Supabase calls inside onAuthStateChange
+          setTimeout(() => {
+            if (mounted) {
+              fetchProfile(session.user.id).finally(() => {
+                if (mounted) setLoading(false);
+              });
+            }
+          }, 0);
         } else {
           setProfile(null);
+          setLoading(false);
         }
-        if (mounted) setLoading(false);
       }
     );
 
