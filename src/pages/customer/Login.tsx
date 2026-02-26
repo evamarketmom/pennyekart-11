@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ const CustomerLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { setLiteMode } = useLiteMode();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,9 +30,18 @@ const CustomerLogin = () => {
     }
     setLoading(true);
 
+    // Safety timeout - if login takes more than 15 seconds, reset
+    timeoutRef.current = setTimeout(() => {
+      setLoading(false);
+      setShowLiteSuggestion(true);
+      toast({ title: "Login timed out", description: "Please try again or switch to Lite version.", variant: "destructive" });
+    }, 15000);
+
     try {
       const email = `${mobile}@pennyekart.in`;
       const { data, error } = await supabase.auth.signInWithPassword({ email, password: CUSTOMER_PASSWORD });
+
+      clearTimeout(timeoutRef.current);
 
       if (error) {
         const newCount = failCount + 1;
@@ -43,8 +53,10 @@ const CustomerLogin = () => {
       }
 
       // Navigate immediately, profile check happens in background via AuthProvider
+      setLoading(false);
       navigate("/");
     } catch (err) {
+      clearTimeout(timeoutRef.current);
       setShowLiteSuggestion(true);
       toast({ title: "Connection error", description: "Please check your internet connection and try again.", variant: "destructive" });
       setLoading(false);

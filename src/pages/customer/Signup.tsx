@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
 
@@ -32,19 +31,52 @@ const CustomerSignup = () => {
   const [districts, setDistricts] = useState<District[]>([]);
   const [localBodies, setLocalBodies] = useState<LocalBody[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    supabase.from("locations_districts").select("id, name").eq("is_active", true).order("sort_order")
-      .then(({ data }) => { if (data) setDistricts(data); });
+    const fetchDistricts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("locations_districts")
+          .select("id, name")
+          .eq("is_active", true)
+          .order("sort_order");
+        if (error) {
+          console.error("District fetch error:", error);
+          setFetchError("Could not load districts. Please refresh.");
+          return;
+        }
+        setDistricts(data ?? []);
+      } catch (err) {
+        console.error("District fetch failed:", err);
+        setFetchError("Network error loading districts. Please check your connection.");
+      }
+    };
+    fetchDistricts();
   }, []);
 
   useEffect(() => {
     if (!districtId) { setLocalBodies([]); return; }
-    supabase.from("locations_local_bodies").select("id, name, body_type, ward_count")
-      .eq("district_id", districtId).eq("is_active", true).order("sort_order")
-      .then(({ data }) => { if (data) setLocalBodies(data as LocalBody[]); });
+    const fetchLocalBodies = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("locations_local_bodies")
+          .select("id, name, body_type, ward_count")
+          .eq("district_id", districtId)
+          .eq("is_active", true)
+          .order("sort_order");
+        if (error) {
+          console.error("Local body fetch error:", error);
+          return;
+        }
+        setLocalBodies((data as LocalBody[]) ?? []);
+      } catch (err) {
+        console.error("Local body fetch failed:", err);
+      }
+    };
+    fetchLocalBodies();
   }, [districtId]);
 
   const selectedLocalBody = localBodies.find(lb => lb.id === localBodyId);
@@ -103,6 +135,14 @@ const CustomerSignup = () => {
           <CardDescription>Create your account to start shopping</CardDescription>
         </CardHeader>
         <CardContent>
+          {fetchError && (
+            <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+              {fetchError}
+              <Button variant="link" size="sm" className="ml-2 p-0 h-auto text-destructive underline" onClick={() => window.location.reload()}>
+                Refresh
+              </Button>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="fullName">Full Name</Label>
@@ -117,31 +157,42 @@ const CustomerSignup = () => {
               <Input value="Kerala" disabled />
             </div>
             <div>
-              <Label>District</Label>
-              <Select value={districtId} onValueChange={(v) => { setDistrictId(v); setLocalBodyId(""); setWardNumber(""); }}>
-                <SelectTrigger><SelectValue placeholder="Select district" /></SelectTrigger>
-                <SelectContent>
-                  {districts.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="district">District</Label>
+              <select
+                id="district"
+                value={districtId}
+                onChange={(e) => { setDistrictId(e.target.value); setLocalBodyId(""); setWardNumber(""); }}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="">Select district</option>
+                {districts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
             </div>
             <div>
-              <Label>Panchayath / Municipality</Label>
-              <Select value={localBodyId} onValueChange={(v) => { setLocalBodyId(v); setWardNumber(""); }} disabled={!districtId}>
-                <SelectTrigger><SelectValue placeholder="Select panchayath" /></SelectTrigger>
-                <SelectContent>
-                  {localBodies.map(lb => <SelectItem key={lb.id} value={lb.id}>{lb.name} ({lb.body_type})</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="localBody">Panchayath / Municipality</Label>
+              <select
+                id="localBody"
+                value={localBodyId}
+                onChange={(e) => { setLocalBodyId(e.target.value); setWardNumber(""); }}
+                disabled={!districtId}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">Select panchayath</option>
+                {localBodies.map(lb => <option key={lb.id} value={lb.id}>{lb.name} ({lb.body_type})</option>)}
+              </select>
             </div>
             <div>
-              <Label>Ward</Label>
-              <Select value={wardNumber} onValueChange={setWardNumber} disabled={!localBodyId}>
-                <SelectTrigger><SelectValue placeholder="Select ward" /></SelectTrigger>
-                <SelectContent>
-                  {wardOptions.map(w => <SelectItem key={w} value={String(w)}>Ward {w}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="ward">Ward</Label>
+              <select
+                id="ward"
+                value={wardNumber}
+                onChange={(e) => setWardNumber(e.target.value)}
+                disabled={!localBodyId}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">Select ward</option>
+                {wardOptions.map(w => <option key={w} value={String(w)}>Ward {w}</option>)}
+              </select>
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Registering..." : "Sign Up"}
