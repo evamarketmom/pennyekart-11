@@ -24,27 +24,31 @@ const CustomerLogin = () => {
     }
     setLoading(true);
 
-    const email = `${mobile}@pennyekart.in`;
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password: CUSTOMER_PASSWORD });
+    try {
+      const email = `${mobile}@pennyekart.in`;
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password: CUSTOMER_PASSWORD });
 
-    if (error) {
-      toast({ title: "Login failed", description: "Mobile number not registered or invalid.", variant: "destructive" });
-    } else {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_approved, user_type")
-        .eq("user_id", data.user.id)
-        .maybeSingle();
-
-      if (!profile || profile.user_type !== "customer") {
-        await supabase.auth.signOut();
-        toast({ title: "Access denied", description: "This login is for customers only.", variant: "destructive" });
-      } else if (!profile.is_approved) {
-        await supabase.auth.signOut();
-        toast({ title: "Account pending", description: "Your account is awaiting admin approval.", variant: "destructive" });
+      if (error) {
+        toast({ title: "Login failed", description: "Mobile number not registered or invalid.", variant: "destructive" });
       } else {
-        navigate("/");
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_approved, user_type")
+          .eq("user_id", data.user.id)
+          .maybeSingle();
+
+        if (!profile || profile.user_type !== "customer") {
+          await supabase.auth.signOut();
+          toast({ title: "Access denied", description: "This login is for customers only.", variant: "destructive" });
+        } else if (!profile.is_approved) {
+          await supabase.auth.signOut();
+          toast({ title: "Account pending", description: "Your account is awaiting admin approval.", variant: "destructive" });
+        } else {
+          navigate("/");
+        }
       }
+    } catch (err) {
+      toast({ title: "Connection error", description: "Please check your internet connection and try again.", variant: "destructive" });
     }
     setLoading(false);
   };

@@ -62,30 +62,34 @@ const CustomerSignup = () => {
     }
     setLoading(true);
 
-    const email = `${mobile}@pennyekart.in`;
-    const { error } = await supabase.auth.signUp({
-      email,
-      password: CUSTOMER_PASSWORD,
-      options: {
-        data: {
-          full_name: fullName.trim(),
-          mobile_number: mobile,
-          user_type: "customer",
-          local_body_id: localBodyId,
-          ward_number: parseInt(wardNumber),
+    try {
+      const email = `${mobile}@pennyekart.in`;
+      const { error } = await supabase.auth.signUp({
+        email,
+        password: CUSTOMER_PASSWORD,
+        options: {
+          data: {
+            full_name: fullName.trim(),
+            mobile_number: mobile,
+            user_type: "customer",
+            local_body_id: localBodyId,
+            ward_number: parseInt(wardNumber),
+          },
         },
-      },
-    });
+      });
 
-    if (error) {
-      if (error.message.includes("already registered")) {
-        toast({ title: "Mobile number already registered", description: "Please login instead.", variant: "destructive" });
+      if (error) {
+        if (error.message.includes("already registered")) {
+          toast({ title: "Mobile number already registered", description: "Please login instead.", variant: "destructive" });
+        } else {
+          toast({ title: "Signup failed", description: error.message, variant: "destructive" });
+        }
       } else {
-        toast({ title: "Signup failed", description: error.message, variant: "destructive" });
+        toast({ title: "Registration successful!", description: "You can now start shopping." });
+        navigate("/");
       }
-    } else {
-      toast({ title: "Registration successful!", description: "You can now start shopping." });
-      navigate("/");
+    } catch (err) {
+      toast({ title: "Connection error", description: "Please check your internet connection and try again.", variant: "destructive" });
     }
     setLoading(false);
   };
