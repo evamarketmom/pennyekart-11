@@ -7,6 +7,7 @@ import BannerCarousel from "@/components/BannerCarousel";
 import GroceryCategories from "@/components/GroceryCategories";
 import ProductRow from "@/components/ProductRow";
 import MobileBottomNav from "@/components/MobileBottomNav";
+import FlashSaleBanner from "@/components/FlashSaleBanner";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { useAreaProducts } from "@/hooks/useAreaProducts";
@@ -189,6 +190,7 @@ const Index = () => {
       </header>
 
       <main className="relative z-0 space-y-2">
+        <FlashSaleBanner />
         <CategoryBar onCategoryClick={handleCategoryClick} selectedCategory={selectedCategory} />
         <BannerCarousel />
         <GroceryCategories onCategoryClick={handleCategoryClick} selectedCategory={selectedCategory} />
