@@ -32,6 +32,7 @@ import PennyServices from "./pages/PennyServices";
 import ServiceDetail from "./pages/ServiceDetail";
 import PennyCarbs from "./pages/PennyCarbs";
 import AppSettingsPage from "./pages/admin/AppSettingsPage";
+import StorageConfigPage from "./pages/admin/StorageConfigPage";
 import StockControlPage from "./pages/admin/StockControlPage";
 import ReportsPage from "./pages/admin/ReportsPage";
 import WalletManagementPage from "./pages/admin/WalletManagementPage";
@@ -80,6 +81,7 @@ const AppRoutes = () => {
       <Route path="/pennycarbs" element={<PennyCarbs />} />
       <Route path="/admin/stock-control" element={<ProtectedRoute requirePermission="read_stock"><StockControlPage /></ProtectedRoute>} />
       <Route path="/admin/settings" element={<ProtectedRoute requirePermission="read_products"><AppSettingsPage /></ProtectedRoute>} />
+      <Route path="/admin/storage" element={<ProtectedRoute requireSuperAdmin><StorageConfigPage /></ProtectedRoute>} />
       <Route path="/admin/reports" element={<ProtectedRoute requirePermission="read_orders"><ReportsPage /></ProtectedRoute>} />
       <Route path="/admin/wallets" element={<ProtectedRoute requirePermission="read_users"><WalletManagementPage /></ProtectedRoute>} />
       <Route path="/admin/penny-prime" element={<ProtectedRoute requirePermission="read_orders"><PennyPrimePage /></ProtectedRoute>} />

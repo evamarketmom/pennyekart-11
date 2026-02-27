@@ -831,8 +831,10 @@ export type Database = {
           purchase_rate: number
           section: string | null
           stock: number
+          storage_provider: string | null
           updated_at: string
           updated_by: string | null
+          upload_status: string | null
           video_url: string | null
         }
         Insert: {
@@ -853,8 +855,10 @@ export type Database = {
           purchase_rate?: number
           section?: string | null
           stock?: number
+          storage_provider?: string | null
           updated_at?: string
           updated_by?: string | null
+          upload_status?: string | null
           video_url?: string | null
         }
         Update: {
@@ -875,8 +879,10 @@ export type Database = {
           purchase_rate?: number
           section?: string | null
           stock?: number
+          storage_provider?: string | null
           updated_at?: string
           updated_by?: string | null
+          upload_status?: string | null
           video_url?: string | null
         }
         Relationships: []
@@ -1114,7 +1120,9 @@ export type Database = {
           purchase_rate: number
           seller_id: string
           stock: number
+          storage_provider: string | null
           updated_at: string
+          upload_status: string | null
           video_url: string | null
         }
         Insert: {
@@ -1137,7 +1145,9 @@ export type Database = {
           purchase_rate?: number
           seller_id: string
           stock?: number
+          storage_provider?: string | null
           updated_at?: string
+          upload_status?: string | null
           video_url?: string | null
         }
         Update: {
@@ -1160,7 +1170,9 @@ export type Database = {
           purchase_rate?: number
           seller_id?: string
           stock?: number
+          storage_provider?: string | null
           updated_at?: string
+          upload_status?: string | null
           video_url?: string | null
         }
         Relationships: [
@@ -1359,6 +1371,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      storage_providers: {
+        Row: {
+          created_at: string
+          credentials: Json
+          id: string
+          is_enabled: boolean
+          priority: number
+          provider_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credentials?: Json
+          id?: string
+          is_enabled?: boolean
+          priority?: number
+          provider_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credentials?: Json
+          id?: string
+          is_enabled?: boolean
+          priority?: number
+          provider_name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
