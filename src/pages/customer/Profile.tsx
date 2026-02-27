@@ -136,7 +136,7 @@ const Profile = () => {
               <p className="text-xs text-muted-foreground">Order #{order.id.slice(0, 8)}</p>
               <p className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
             </div>
-            <Badge variant={order.status === "delivered" ? "default" : order.status === "cancelled" ? "destructive" : "secondary"}>
+            <Badge variant={order.status === "delivered" ? "default" : order.status === "cancelled" ? "destructive" : order.status === "return_requested" ? "secondary" : order.status === "return_confirmed" ? "default" : "secondary"}>
               {statusLabels[order.status] || order.status}
             </Badge>
           </div>
