@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Star, TrendingUp, Sparkles, Wallet, Megaphone, X, Plus, Package } from "lucide-react";
+import FlashSaleManager from "@/components/admin/FlashSaleManager";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -105,7 +106,10 @@ const OffersPage = () => {
         <p className="text-sm text-muted-foreground mt-1">Manage which products appear in each section on the storefront</p>
       </div>
 
-      <div className="space-y-6">
+      {/* Flash Sales Section */}
+      <FlashSaleManager />
+
+      <div className="space-y-6 mt-6">
         {grouped.map((section) => {
           const Icon = section.icon;
           return (

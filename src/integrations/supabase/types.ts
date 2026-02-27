@@ -307,6 +307,86 @@ export type Database = {
           },
         ]
       }
+      flash_sale_products: {
+        Row: {
+          created_at: string
+          flash_mrp: number
+          flash_price: number
+          flash_sale_id: string
+          id: string
+          product_id: string | null
+          seller_product_id: string | null
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          flash_mrp?: number
+          flash_price?: number
+          flash_sale_id: string
+          id?: string
+          product_id?: string | null
+          seller_product_id?: string | null
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          flash_mrp?: number
+          flash_price?: number
+          flash_sale_id?: string
+          id?: string
+          product_id?: string | null
+          seller_product_id?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flash_sale_products_flash_sale_id_fkey"
+            columns: ["flash_sale_id"]
+            isOneToOne: false
+            referencedRelation: "flash_sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flash_sales: {
+        Row: {
+          banner_color: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_time: string
+          id: string
+          is_active: boolean
+          start_time: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          banner_color?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_time: string
+          id?: string
+          is_active?: boolean
+          start_time: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          banner_color?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_time?: string
+          id?: string
+          is_active?: boolean
+          start_time?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       godown_local_bodies: {
         Row: {
           created_at: string
