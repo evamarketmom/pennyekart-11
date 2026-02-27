@@ -26,6 +26,7 @@ const navItems = [
   { label: "Offers & Features", icon: Star, path: "/admin/offers", perm: "read_products" },
   { label: "Stock Control", icon: BarChart3, path: "/admin/stock-control", perm: "read_stock" },
   { label: "App Settings", icon: SlidersHorizontal, path: "/admin/settings", perm: "read_products" },
+  { label: "Storage Config", icon: Settings, path: "/admin/storage", perm: null, superOnly: true },
   { label: "Wallets", icon: Wallet, path: "/admin/wallets", perm: "read_users" },
   { label: "Penny Prime", icon: Handshake, path: "/admin/penny-prime", perm: "read_orders" },
   { label: "Reports", icon: BarChart3, path: "/admin/reports", perm: "read_orders" },
