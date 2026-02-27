@@ -30,6 +30,9 @@ const statusIcons: Record<string, any> = {
   packed: Package,
   shipped: Truck,
   delivered: MapPin,
+  cancelled: XCircle,
+  return_requested: RotateCcw,
+  return_confirmed: CheckCircle,
 };
 const statusLabels: Record<string, string> = {
   pending: "Pending",
@@ -37,6 +40,9 @@ const statusLabels: Record<string, string> = {
   packed: "Packed",
   shipped: "Shipped",
   delivered: "Delivered",
+  cancelled: "Cancelled",
+  return_requested: "Return Requested",
+  return_confirmed: "Return Confirmed",
 };
 
 const Profile = () => {
