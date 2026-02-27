@@ -67,7 +67,7 @@ const DeliveryStaffDashboard = () => {
 
   useEffect(() => { fetchData(); }, [user]);
 
-  const pendingCount = orders.filter((o) => o.status !== "delivered").length;
+  const pendingCount = orders.filter((o) => !["delivered", "cancelled", "return_requested", "return_confirmed"].includes(o.status)).length;
   const deliveredToday = orders.filter((o) => o.status === "delivered" && new Date(o.created_at).toDateString() === new Date().toDateString()).length;
 
   return (
