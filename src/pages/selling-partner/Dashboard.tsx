@@ -469,10 +469,8 @@ const SellingPartnerDashboard = () => {
                       </select>
                     </div>
                     <ImageUpload bucket="products" value={form.image_url} onChange={url => setForm({ ...form, image_url: url })} label="Image 1 (Upload or paste URL)" />
-                    <div><Label>Image 2 (URL)</Label><Input value={form.image_url_2} onChange={e => setForm({ ...form, image_url_2: e.target.value })} placeholder="Paste image URL" /></div>
-                    {form.image_url_2 && <img src={form.image_url_2} alt="Preview 2" className="h-20 w-20 rounded-md border object-cover" />}
-                    <div><Label>Image 3 (URL)</Label><Input value={form.image_url_3} onChange={e => setForm({ ...form, image_url_3: e.target.value })} placeholder="Paste image URL" /></div>
-                    {form.image_url_3 && <img src={form.image_url_3} alt="Preview 3" className="h-20 w-20 rounded-md border object-cover" />}
+                    <ImageUpload bucket="products" value={form.image_url_2} onChange={url => setForm({ ...form, image_url_2: url })} label="Image 2" />
+                    <ImageUpload bucket="products" value={form.image_url_3} onChange={url => setForm({ ...form, image_url_3: url })} label="Image 3" />
                     <div><Label>Video URL</Label><Input value={form.video_url} onChange={e => setForm({ ...form, video_url: e.target.value })} placeholder="Paste YouTube or video link" /></div>
                     <div>
                       <Label>Area Godown (assigned by admin)</Label>
@@ -586,8 +584,8 @@ const SellingPartnerDashboard = () => {
                     </select>
                   </div>
                   <ImageUpload bucket="products" value={editForm.image_url} onChange={url => setEditForm({ ...editForm, image_url: url })} label="Image 1" />
-                  <div><Label>Image 2 (URL)</Label><Input value={editForm.image_url_2} onChange={e => setEditForm({ ...editForm, image_url_2: e.target.value })} /></div>
-                  <div><Label>Image 3 (URL)</Label><Input value={editForm.image_url_3} onChange={e => setEditForm({ ...editForm, image_url_3: e.target.value })} /></div>
+                  <ImageUpload bucket="products" value={editForm.image_url_2} onChange={url => setEditForm({ ...editForm, image_url_2: url })} label="Image 2" />
+                  <ImageUpload bucket="products" value={editForm.image_url_3} onChange={url => setEditForm({ ...editForm, image_url_3: url })} label="Image 3" />
                   <div><Label>Video URL</Label><Input value={editForm.video_url} onChange={e => setEditForm({ ...editForm, video_url: e.target.value })} placeholder="Paste YouTube or video link" /></div>
                    <div className="flex items-center gap-2 rounded-lg border p-3">
                      <Star className="h-4 w-4 text-yellow-500" />
