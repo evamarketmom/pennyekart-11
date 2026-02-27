@@ -24,7 +24,7 @@ async function uploadToCloudinary(
   if (!cloud_name || !upload_preset) throw new Error("Cloudinary credentials missing");
 
   const formData = new FormData();
-  formData.append("file", new Blob([file]), fileName);
+  formData.append("file", new Blob([file.buffer as ArrayBuffer]), fileName);
   formData.append("upload_preset", upload_preset);
 
   const res = await fetch(
@@ -80,7 +80,7 @@ async function uploadToS3(
       "x-amz-date": dateStamp,
       Authorization: authorization,
     },
-    body: file,
+    body: file.buffer as ArrayBuffer,
   });
 
   if (!res.ok) {
@@ -102,7 +102,7 @@ async function uploadToImageKit(
   // ImageKit upload API requires private key for server-side upload
   // Using the upload API with public key (unsigned)
   const formData = new FormData();
-  formData.append("file", new Blob([file]), fileName);
+  formData.append("file", new Blob([file.buffer as ArrayBuffer]), fileName);
   formData.append("fileName", fileName);
   formData.append("publicKey", public_key);
 

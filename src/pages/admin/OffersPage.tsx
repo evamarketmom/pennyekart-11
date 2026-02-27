@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Star, TrendingUp, Sparkles, Wallet, Megaphone, X, Plus, Package } from "lucide-react";
+import { Star, TrendingUp, Sparkles, Wallet, Megaphone, X, Plus, Package, Wand2 } from "lucide-react";
 import FlashSaleManager from "@/components/admin/FlashSaleManager";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -24,18 +24,21 @@ interface Product {
 }
 
 const sectionConfig = [
-  { key: "featured", label: "Featured Products", icon: Star, color: "text-yellow-500" },
-  { key: "most_ordered", label: "Most Ordered Items", icon: TrendingUp, color: "text-blue-500" },
-  { key: "new_arrivals", label: "New Arrivals", icon: Sparkles, color: "text-green-500" },
-  { key: "low_budget", label: "Low Budget Picks", icon: Wallet, color: "text-orange-500" },
-  { key: "sponsors", label: "Sponsors", icon: Megaphone, color: "text-purple-500" },
+  { key: "featured", label: "Featured Products", icon: Star, color: "text-yellow-500", autoAssign: false },
+  { key: "most_ordered", label: "Most Ordered Items", icon: TrendingUp, color: "text-blue-500", autoAssign: true },
+  { key: "new_arrivals", label: "New Arrivals", icon: Sparkles, color: "text-green-500", autoAssign: true },
+  { key: "low_budget", label: "Low Budget Picks", icon: Wallet, color: "text-orange-500", autoAssign: true },
+  { key: "sponsors", label: "Sponsors", icon: Megaphone, color: "text-purple-500", autoAssign: false },
 ];
+
+const AUTO_ASSIGN_LIMIT = 10;
 
 const OffersPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [addDialogSection, setAddDialogSection] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [autoAssigning, setAutoAssigning] = useState<string | null>(null);
   const { hasPermission } = usePermissions();
   const { toast } = useToast();
 
@@ -87,6 +90,80 @@ const OffersPage = () => {
     toast({ title: "Added to section" });
   };
 
+  const handleAutoAssign = async (sectionKey: string) => {
+    setAutoAssigning(sectionKey);
+    try {
+      // First, clear existing products in this section
+      const { error: clearError } = await supabase
+        .from("products")
+        .update({ section: null })
+        .eq("section", sectionKey);
+      if (clearError) throw clearError;
+
+      let productIds: string[] = [];
+
+      if (sectionKey === "low_budget") {
+        // Get cheapest active products
+        const { data } = await supabase
+          .from("products")
+          .select("id")
+          .eq("is_active", true)
+          .is("section", null)
+          .order("price", { ascending: true })
+          .limit(AUTO_ASSIGN_LIMIT);
+        productIds = (data ?? []).map((p) => p.id);
+      } else if (sectionKey === "new_arrivals") {
+        // Get most recently created products
+        const { data } = await supabase
+          .from("products")
+          .select("id")
+          .eq("is_active", true)
+          .is("section", null)
+          .order("created_at", { ascending: false })
+          .limit(AUTO_ASSIGN_LIMIT);
+        productIds = (data ?? []).map((p) => p.id);
+      } else if (sectionKey === "most_ordered") {
+        // Count product occurrences in orders
+        const { data: orders } = await supabase
+          .from("orders")
+          .select("items");
+        const countMap: Record<string, number> = {};
+        (orders ?? []).forEach((order) => {
+          const items = order.items as any[];
+          if (Array.isArray(items)) {
+            items.forEach((item) => {
+              const pid = item.product_id || item.id;
+              if (pid) countMap[pid] = (countMap[pid] || 0) + (item.quantity || 1);
+            });
+          }
+        });
+        // Sort by count descending, take top N
+        const sorted = Object.entries(countMap)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, AUTO_ASSIGN_LIMIT)
+          .map(([id]) => id);
+        productIds = sorted;
+      }
+
+      // Assign section to selected products
+      if (productIds.length > 0) {
+        for (const id of productIds) {
+          await supabase.from("products").update({ section: sectionKey }).eq("id", id).eq("is_active", true);
+        }
+      }
+
+      await fetchProducts();
+      toast({
+        title: "Auto-assigned",
+        description: `${productIds.length} products added to ${sectionConfig.find((s) => s.key === sectionKey)?.label}`,
+      });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setAutoAssigning(null);
+    }
+  };
+
   const openAddDialog = (sectionKey: string) => {
     setAddDialogSection(sectionKey);
     setSearch("");
@@ -106,7 +183,6 @@ const OffersPage = () => {
         <p className="text-sm text-muted-foreground mt-1">Manage which products appear in each section on the storefront</p>
       </div>
 
-      {/* Flash Sales Section */}
       <FlashSaleManager />
 
       <div className="space-y-6 mt-6">
@@ -122,9 +198,22 @@ const OffersPage = () => {
                     <Badge variant="secondary" className="ml-2">{section.items.length}</Badge>
                   </div>
                   {canEdit && (
-                    <Button size="sm" variant="outline" onClick={() => openAddDialog(section.key)}>
-                      <Plus className="h-4 w-4 mr-1" /> Add Product
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {section.autoAssign && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleAutoAssign(section.key)}
+                          disabled={autoAssigning === section.key}
+                        >
+                          <Wand2 className="h-4 w-4 mr-1" />
+                          {autoAssigning === section.key ? "Assigning..." : "Auto Assign"}
+                        </Button>
+                      )}
+                      <Button size="sm" variant="outline" onClick={() => openAddDialog(section.key)}>
+                        <Plus className="h-4 w-4 mr-1" /> Add Product
+                      </Button>
+                    </div>
                   )}
                 </div>
               </CardHeader>
@@ -169,7 +258,6 @@ const OffersPage = () => {
         })}
       </div>
 
-      {/* Add Product to Section Dialog */}
       <Dialog open={!!addDialogSection} onOpenChange={(v) => { if (!v) setAddDialogSection(null); }}>
         <DialogContent className="max-h-[80vh] flex flex-col">
           <DialogHeader>
