@@ -234,7 +234,7 @@ const ProductsPage = () => {
           <div className="mb-4 flex justify-end">
             {hasPermission("create_products") && productDialog}
           </div>
-          <div className="rounded-lg border bg-card">
+          <div className="admin-table-wrap">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -302,7 +302,7 @@ const ProductsPage = () => {
               <ExternalLink className="ml-1 h-3.5 w-3.5" />
             </Button>
           </div>
-          <div className="rounded-lg border bg-card">
+          <div className="admin-table-wrap">
             <Table>
               <TableHeader>
                 <TableRow>

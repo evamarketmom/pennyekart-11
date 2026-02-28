@@ -139,7 +139,7 @@ const UsersPage = () => {
         </TabsList>
       </Tabs>
 
-      <div className="rounded-lg border bg-card overflow-x-auto">
+      <div className="admin-table-wrap">
         <Table>
           <TableHeader>
             <TableRow>

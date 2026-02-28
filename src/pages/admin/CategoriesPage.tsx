@@ -115,7 +115,7 @@ const CategoriesPage = () => {
           <TabsTrigger value="grocery">Grocery Categories</TabsTrigger>
         </TabsList>
         <TabsContent value={tab}>
-          <div className="rounded-lg border bg-card">
+          <div className="admin-table-wrap">
             <Table>
               <TableHeader>
                 <TableRow>

@@ -251,7 +251,7 @@ const SellingPartnersPage = () => {
           <Input placeholder="Search by name, email, phone, panchayath..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
 
-        <div className="rounded-lg border bg-card overflow-x-auto">
+        <div className="admin-table-wrap">
           <Table>
             <TableHeader>
               <TableRow>

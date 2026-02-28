@@ -96,3 +96,38 @@
     display: none;
   }
 }
+
+/* Admin responsive table wrapper */
+.admin-table-wrap {
+  @apply overflow-x-auto rounded-lg border bg-card;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-table-wrap table {
+  @apply min-w-[600px];
+}
+
+/* Make all tables in admin scrollable on mobile */
+@media (max-width: 768px) {
+  .admin-table-wrap table,
+  [class*="CardContent"] table,
+  .rounded-md.border > table {
+    @apply min-w-[500px];
+  }
+
+  [class*="CardContent"],
+  .rounded-md.border:has(table) {
+    @apply overflow-x-auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Compact admin text on mobile */
+  main table td,
+  main table th {
+    @apply text-xs px-2 py-1.5;
+  }
+
+  main h1 {
+    @apply text-xl;
+  }
+}

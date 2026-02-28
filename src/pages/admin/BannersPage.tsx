@@ -80,7 +80,7 @@ const BannersPage = () => {
           </Dialog>
         )}
       </div>
-      <div className="rounded-lg border bg-card">
+      <div className="admin-table-wrap">
         <Table>
           <TableHeader>
             <TableRow>

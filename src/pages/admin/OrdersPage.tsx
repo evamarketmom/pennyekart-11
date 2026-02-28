@@ -45,7 +45,7 @@ const OrdersPage = () => {
   return (
     <AdminLayout>
       <h1 className="mb-6 text-2xl font-bold">Orders</h1>
-      <div className="rounded-lg border bg-card">
+      <div className="admin-table-wrap">
         <Table>
           <TableHeader>
             <TableRow>
