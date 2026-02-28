@@ -138,10 +138,25 @@ const SellingPartnerDashboard = () => {
   };
 
   const fetchAssignedGodowns = async () => {
-    if (!user) return;
+    if (!user || !profile) return;
+    const godownIds = new Set<string>();
+
+    // 1. Manual assignments from admin
     const { data: assignments } = await supabase.from("seller_godown_assignments").select("godown_id").eq("seller_id", user.id);
-    if (!assignments || assignments.length === 0) { setAssignedGodowns([]); return; }
-    const { data: godownData } = await supabase.from("godowns").select("id, name").in("id", assignments.map(a => a.godown_id));
+    (assignments ?? []).forEach(a => godownIds.add(a.godown_id));
+
+    // 2. Auto-detect area godowns matching seller's panchayath (local_body_id)
+    if (profile.local_body_id) {
+      const { data: localBodyGodowns } = await supabase
+        .from("godown_local_bodies")
+        .select("godown_id, godowns!inner(godown_type)")
+        .eq("local_body_id", profile.local_body_id)
+        .eq("godowns.godown_type", "area");
+      (localBodyGodowns ?? []).forEach(r => godownIds.add(r.godown_id));
+    }
+
+    if (godownIds.size === 0) { setAssignedGodowns([]); return; }
+    const { data: godownData } = await supabase.from("godowns").select("id, name").in("id", Array.from(godownIds)).eq("is_active", true);
     if (godownData) setAssignedGodowns(godownData);
   };
 
@@ -281,7 +296,7 @@ const SellingPartnerDashboard = () => {
   };
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !profile) return;
     const init = async () => {
       await Promise.all([fetchAssignedGodowns(), fetchCategories(), fetchWallet(), fetchProfileSettings()]);
       const { data: myProds } = await supabase.from("seller_products").select("*").eq("seller_id", user.id).order("created_at", { ascending: false });
@@ -291,7 +306,7 @@ const SellingPartnerDashboard = () => {
       if (orders) fetchAnalytics(prods, orders);
     };
     init();
-  }, [user]);
+  }, [user, profile]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -474,9 +489,9 @@ const SellingPartnerDashboard = () => {
                     <ImageUpload bucket="products" value={form.image_url_3} onChange={url => setForm({ ...form, image_url_3: url })} label="Image 3" />
                     <div><Label>Video URL</Label><Input value={form.video_url} onChange={e => setForm({ ...form, video_url: e.target.value })} placeholder="Paste YouTube or video link" /></div>
                     <div>
-                      <Label>Area Godown (assigned by admin)</Label>
-                      <Select value={form.area_godown_id} onValueChange={v => setForm({ ...form, area_godown_id: v })}>
-                        <SelectTrigger><SelectValue placeholder={assignedGodowns.length ? "Select godown" : "No godowns assigned"} /></SelectTrigger>
+                      <Label>Area Godown {assignedGodowns.length > 0 && <span className="text-xs text-muted-foreground ml-1">(auto-detected from your panchayath)</span>}</Label>
+                      <Select value={form.area_godown_id || (assignedGodowns.length === 1 ? assignedGodowns[0].id : "")} onValueChange={v => setForm({ ...form, area_godown_id: v })}>
+                        <SelectTrigger><SelectValue placeholder={assignedGodowns.length ? "Select godown" : "No godowns available for your area"} /></SelectTrigger>
                         <SelectContent>{assignedGodowns.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
