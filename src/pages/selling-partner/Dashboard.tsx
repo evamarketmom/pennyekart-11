@@ -78,6 +78,7 @@ const emptyForm = {
   name: "", description: "", price: "", category: "", stock: "",
   area_godown_id: "", image_url: "", image_url_2: "", image_url_3: "",
   purchase_rate: "", mrp: "", discount_rate: "", is_featured: false, video_url: "",
+  wallet_points: "",
 };
 
 const SellingPartnerDashboard = () => {
@@ -331,6 +332,7 @@ const SellingPartnerDashboard = () => {
       image_url_3: form.image_url_3 || null,
       is_featured: form.is_featured,
       video_url: form.video_url.trim() || null,
+      wallet_points: parseFloat(form.wallet_points) || 0,
     });
     if (error) {
       toast({ title: "Failed", description: error.message, variant: "destructive" });
@@ -350,6 +352,7 @@ const SellingPartnerDashboard = () => {
       purchase_rate: String(p.purchase_rate), mrp: String(p.mrp),
       discount_rate: String(p.discount_rate), is_featured: p.is_featured,
       video_url: (p as any).video_url ?? "",
+      wallet_points: String((p as any).wallet_points ?? 0),
     });
     setEditDialogOpen(true);
   };
@@ -373,6 +376,7 @@ const SellingPartnerDashboard = () => {
       image_url_3: editForm.image_url_3 || null,
       is_featured: editForm.is_featured,
       video_url: editForm.video_url.trim() || null,
+      wallet_points: parseFloat(editForm.wallet_points) || 0,
     }).eq("id", editProduct.id);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -490,6 +494,7 @@ const SellingPartnerDashboard = () => {
                     <ImageUpload bucket="products" value={form.image_url_2} onChange={url => setForm({ ...form, image_url_2: url })} label="Image 2" />
                     <ImageUpload bucket="products" value={form.image_url_3} onChange={url => setForm({ ...form, image_url_3: url })} label="Image 3" />
                     <div><Label>Video URL</Label><Input value={form.video_url} onChange={e => setForm({ ...form, video_url: e.target.value })} placeholder="Paste YouTube or video link" /></div>
+                    <div><Label>Wallet Points</Label><Input type="number" min="0" value={form.wallet_points} onChange={e => setForm({ ...form, wallet_points: e.target.value })} placeholder="Points earned per purchase" /></div>
                     <div>
                       <Label>Area Godown {assignedGodowns.length > 0 && <span className="text-xs text-muted-foreground ml-1">(auto-detected from your panchayath)</span>}</Label>
                       <Select value={form.area_godown_id || (assignedGodowns.length === 1 ? assignedGodowns[0].id : "")} onValueChange={v => setForm({ ...form, area_godown_id: v })}>
@@ -605,6 +610,7 @@ const SellingPartnerDashboard = () => {
                   <ImageUpload bucket="products" value={editForm.image_url_2} onChange={url => setEditForm({ ...editForm, image_url_2: url })} label="Image 2" />
                   <ImageUpload bucket="products" value={editForm.image_url_3} onChange={url => setEditForm({ ...editForm, image_url_3: url })} label="Image 3" />
                   <div><Label>Video URL</Label><Input value={editForm.video_url} onChange={e => setEditForm({ ...editForm, video_url: e.target.value })} placeholder="Paste YouTube or video link" /></div>
+                  <div><Label>Wallet Points</Label><Input type="number" min="0" value={editForm.wallet_points} onChange={e => setEditForm({ ...editForm, wallet_points: e.target.value })} placeholder="Points earned per purchase" /></div>
                    <div className="flex items-center gap-2 rounded-lg border p-3">
                      <Star className="h-4 w-4 text-yellow-500" />
                      <div className="flex-1"><Label className="text-sm font-medium">Featured Product</Label></div>
