@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Minus, Plus, Trash2, ShieldCheck, Clock } from "lucide-react";
+import { ArrowLeft, Minus, Plus, Trash2, ShieldCheck, Clock, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,6 +8,8 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -16,8 +18,13 @@ const Cart = () => {
   const { items, updateQuantity, removeItem, clearCart, totalPrice, totalItems } = useCart();
   const { user } = useAuth();
   const [showPayment, setShowPayment] = useState(false);
+  const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [placingOrder, setPlacingOrder] = useState(false);
+
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [savedAddress, setSavedAddress] = useState<string | null>(null);
+  const [addressLoading, setAddressLoading] = useState(false);
 
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; collabId?: string } | null>(null);
@@ -28,8 +35,20 @@ const Cart = () => {
   const [walletId, setWalletId] = useState<string | null>(null);
   const [walletMinUsage, setWalletMinUsage] = useState(0);
 
+  // Load saved address and wallet
   useEffect(() => {
     if (user) {
+      supabase
+        .from("profiles")
+        .select("business_address")
+        .eq("user_id", user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.business_address) {
+            setSavedAddress(data.business_address);
+            setDeliveryAddress(data.business_address);
+          }
+        });
       supabase
         .from("customer_wallets")
         .select("id, balance, min_usage_amount")
@@ -220,7 +239,33 @@ const Cart = () => {
       return;
     }
 
-    setShowPayment(true);
+    // Show address dialog if no saved address, otherwise go to payment
+    if (!savedAddress) {
+      setShowAddressDialog(true);
+    } else {
+      setShowPayment(true);
+    }
+  };
+
+  const handleSaveAddress = async () => {
+    if (!deliveryAddress.trim()) {
+      toast.error("Please enter a delivery address");
+      return;
+    }
+    setAddressLoading(true);
+    try {
+      await supabase
+        .from("profiles")
+        .update({ business_address: deliveryAddress.trim() } as any)
+        .eq("user_id", user!.id);
+      setSavedAddress(deliveryAddress.trim());
+      setShowAddressDialog(false);
+      setShowPayment(true);
+    } catch {
+      toast.error("Failed to save address");
+    } finally {
+      setAddressLoading(false);
+    }
   };
 
   const handleConfirmOrder = async () => {
@@ -271,7 +316,7 @@ const Cart = () => {
           items: mapOrderItems(microItems),
           total: microTotal,
           status: "pending",
-          shipping_address: paymentMethod === "cod" ? "Cash on Delivery" : paymentMethod,
+          shipping_address: deliveryAddress,
         });
       }
 
@@ -283,7 +328,7 @@ const Cart = () => {
           items: mapOrderItems(sellerItems),
           total: sellerTotal,
           status: "seller_confirmation_pending",
-          shipping_address: paymentMethod === "cod" ? "Cash on Delivery" : paymentMethod,
+          shipping_address: deliveryAddress,
           seller_id: sellerId === "unknown" ? null : sellerId,
         });
       }
@@ -443,6 +488,31 @@ const Cart = () => {
 
           {/* Right: Price Details */}
           <div className="w-full lg:w-80 shrink-0 space-y-4">
+          {/* Delivery Address */}
+            <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+              <h2 className="mb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <MapPin className="h-4 w-4" /> Delivery Address
+              </h2>
+              {savedAddress ? (
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm text-foreground">{savedAddress}</p>
+                  <button
+                    onClick={() => setShowAddressDialog(true)}
+                    className="text-xs font-semibold uppercase text-primary hover:underline shrink-0"
+                  >
+                    Change
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowAddressDialog(true)}
+                  className="text-sm text-primary font-medium hover:underline"
+                >
+                  + Add delivery address
+                </button>
+              )}
+            </div>
+
             {/* Coupon Code */}
             <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
               <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">
@@ -577,6 +647,31 @@ const Cart = () => {
         </div>
       </div>
 
+      {/* Delivery Address Dialog */}
+      <Dialog open={showAddressDialog} onOpenChange={setShowAddressDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delivery Address</DialogTitle>
+            <DialogDescription>Enter your delivery address. This will be saved for future orders.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Textarea
+              value={deliveryAddress}
+              onChange={(e) => setDeliveryAddress(e.target.value)}
+              placeholder="Enter full delivery address (House no, Street, Landmark, Pincode...)"
+              rows={4}
+              className="text-sm"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddressDialog(false)}>Cancel</Button>
+            <Button onClick={handleSaveAddress} disabled={addressLoading || !deliveryAddress.trim()}>
+              {addressLoading ? "Saving..." : "Save & Continue"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Payment Method Dialog */}
       <Dialog open={showPayment} onOpenChange={setShowPayment}>
         <DialogContent className="sm:max-w-md">
@@ -584,6 +679,14 @@ const Cart = () => {
             <DialogTitle>Select Payment Method</DialogTitle>
             <DialogDescription>Choose how you'd like to pay for your order.</DialogDescription>
           </DialogHeader>
+          {/* Show delivery address */}
+          <div className="rounded-md border border-border bg-muted/50 p-3 flex items-start gap-2">
+            <MapPin className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
+            <div className="flex-1">
+              <p className="text-xs font-medium text-muted-foreground">Delivering to</p>
+              <p className="text-sm text-foreground">{deliveryAddress}</p>
+            </div>
+          </div>
           <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="gap-3 py-2">
             <div className="flex items-center space-x-3 rounded-lg border border-border p-3">
               <RadioGroupItem value="cod" id="cod" />
