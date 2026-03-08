@@ -102,7 +102,17 @@ const OffersPage = () => {
 
       let productIds: string[] = [];
 
-      if (sectionKey === "low_budget") {
+      if (sectionKey === "featured") {
+        // Get highest discount active products as featured
+        const { data } = await supabase
+          .from("products")
+          .select("id")
+          .eq("is_active", true)
+          .is("section", null)
+          .order("discount_rate", { ascending: false })
+          .limit(AUTO_ASSIGN_LIMIT);
+        productIds = (data ?? []).map((p) => p.id);
+      } else if (sectionKey === "low_budget") {
         // Get cheapest active products
         const { data } = await supabase
           .from("products")
@@ -137,7 +147,6 @@ const OffersPage = () => {
             });
           }
         });
-        // Sort by count descending, take top N
         const sorted = Object.entries(countMap)
           .sort(([, a], [, b]) => b - a)
           .slice(0, AUTO_ASSIGN_LIMIT)
