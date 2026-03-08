@@ -97,6 +97,7 @@ const PurchasePage = () => {
   const [editPrice, setEditPrice] = useState(0);
   const [editBatch, setEditBatch] = useState("");
   const [editExpiry, setEditExpiry] = useState("");
+  const [editNarration, setEditNarration] = useState("");
   const [editSaving, setEditSaving] = useState(false);
 
   // Delete dialog state
