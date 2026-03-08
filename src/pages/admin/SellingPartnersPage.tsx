@@ -251,68 +251,25 @@ const SellingPartnersPage = () => {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="Search by name, email, phone, panchayath..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
-
-        <div className="admin-table-wrap">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Panchayath / Ward</TableHead>
-                <TableHead>Products</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Approved</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
-              ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No selling partners found</TableCell></TableRow>
-              ) : filtered.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-medium">{p.full_name ?? "—"}</TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      {p.email && <div className="flex items-center gap-1.5 text-sm"><Mail className="h-3.5 w-3.5 text-muted-foreground" />{p.email}</div>}
-                      {p.mobile_number && <div className="flex items-center gap-1.5 text-sm"><Phone className="h-3.5 w-3.5 text-muted-foreground" />{p.mobile_number}</div>}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-0.5 text-sm">
-                      {p.local_body_name ? (
-                        <>
-                          <div className="font-medium">{p.local_body_name}</div>
-                          <div className="text-muted-foreground text-xs">
-                            {p.body_type && <span className="capitalize">{p.body_type}</span>}
-                            {p.ward_number && <span> · Ward {p.ward_number}</span>}
-                            {p.district_name && <span> · {p.district_name}</span>}
-                          </div>
-                        </>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="gap-1"><Package className="h-3 w-3" />{p.product_count}</Badge>
-                  </TableCell>
-                  <TableCell><Badge variant={p.is_approved ? "default" : "secondary"}>{p.is_approved ? "Active" : "Pending"}</Badge></TableCell>
-                  <TableCell><Switch checked={p.is_approved} onCheckedChange={() => toggleApproval(p.user_id, p.is_approved)} /></TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => setDetailPartner(p)} title="View Details"><User className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => viewProducts(p)} title="Products"><Eye className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => openGodownAssignment(p)} title="Assign Godowns"><MapPin className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => openWallet(p)} title="Wallet"><Wallet className="h-4 w-4" /></Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <Tabs defaultValue="pending" className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="pending" className="gap-2">
+              <Clock className="h-4 w-4" /> Pending
+              {pendingCount > 0 && <Badge variant="secondary" className="ml-1">{pendingCount}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger value="approved" className="gap-2">
+              <CheckCircle className="h-4 w-4" /> Approved
+              {approvedCount > 0 && <Badge variant="default" className="ml-1">{approvedCount}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger value="all" className="gap-2">
+              <Store className="h-4 w-4" /> All
+              <Badge variant="outline" className="ml-1">{filtered.length}</Badge>
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="pending"><PartnerTable items={filtered.filter(p => !p.is_approved)} loading={loading} /></TabsContent>
+          <TabsContent value="approved"><PartnerTable items={filtered.filter(p => p.is_approved)} loading={loading} /></TabsContent>
+          <TabsContent value="all"><PartnerTable items={filtered} loading={loading} /></TabsContent>
+        </Tabs>
       </div>
 
       {/* View Details Dialog */}
