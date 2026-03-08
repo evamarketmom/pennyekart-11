@@ -9,6 +9,7 @@ import ProductRow from "@/components/ProductRow";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import FlashSaleBanner from "@/components/FlashSaleBanner";
 import Footer from "@/components/Footer";
+import CartReminderBanner from "@/components/CartReminderBanner";
 import { useAuth } from "@/hooks/useAuth";
 import { useAreaProducts } from "@/hooks/useAreaProducts";
 import { useSectionProducts } from "@/hooks/useSectionProducts";
