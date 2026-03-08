@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Store, Phone, Mail, Package, Eye, MapPin, Wallet, User, Calendar } from "lucide-react";
+import { Search, Store, Phone, Mail, Package, Eye, MapPin, Wallet, User, Calendar, CheckCircle, Clock } from "lucide-react";
 
 interface SellingPartner {
   id: string;
