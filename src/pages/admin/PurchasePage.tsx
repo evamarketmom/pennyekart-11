@@ -49,6 +49,7 @@ interface StockHistory {
   purchase_price: number;
   batch_number: string | null;
   expiry_date: string | null;
+  narration: string | null;
   created_at: string;
   godown_id: string;
   product_id: string;
@@ -70,6 +71,7 @@ const PurchasePage = () => {
   // Bill info
   const [purchaseNumber, setPurchaseNumber] = useState("...");
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split("T")[0]);
+  const [narration, setNarration] = useState("");
 
   const fetchNextPurchaseNumber = async () => {
     const { data } = await supabase.from("purchase_counter").select("last_number").limit(1).single();
@@ -95,6 +97,7 @@ const PurchasePage = () => {
   const [editPrice, setEditPrice] = useState(0);
   const [editBatch, setEditBatch] = useState("");
   const [editExpiry, setEditExpiry] = useState("");
+  const [editNarration, setEditNarration] = useState("");
   const [editSaving, setEditSaving] = useState(false);
 
   // Delete dialog state
@@ -191,6 +194,7 @@ const PurchasePage = () => {
         batch_number: item.batch_number || null,
         expiry_date: item.expiry_date || null,
         purchase_number: purchaseNumber,
+        narration: narration || null,
       }))
     );
 
@@ -204,6 +208,7 @@ const PurchasePage = () => {
       setItems([]);
       setSelectedGodownIds([]);
       setPurchaseDate(new Date().toISOString().split("T")[0]);
+      setNarration("");
       // Fetch next number after a brief delay to ensure DB commit
       const { data: counterData } = await supabase.from("purchase_counter").select("last_number").limit(1).single();
       if (counterData) {
@@ -220,7 +225,7 @@ const PurchasePage = () => {
     setHistoryLoading(true);
     let query = supabase
       .from("godown_stock")
-      .select("id, quantity, purchase_price, batch_number, expiry_date, created_at, godown_id, product_id")
+      .select("id, quantity, purchase_price, batch_number, expiry_date, narration, created_at, godown_id, product_id")
       .order("created_at", { ascending: false })
       .limit(100);
 
@@ -238,6 +243,7 @@ const PurchasePage = () => {
         purchase_price: row.purchase_price,
         batch_number: row.batch_number,
         expiry_date: row.expiry_date,
+        narration: row.narration,
         created_at: row.created_at,
         godown_id: row.godown_id,
         product_id: row.product_id,
@@ -255,6 +261,7 @@ const PurchasePage = () => {
     setEditPrice(h.purchase_price);
     setEditBatch(h.batch_number ?? "");
     setEditExpiry(h.expiry_date ?? "");
+    setEditNarration(h.narration ?? "");
   };
 
   const handleEditSave = async () => {
@@ -265,6 +272,7 @@ const PurchasePage = () => {
       purchase_price: editPrice,
       batch_number: editBatch || null,
       expiry_date: editExpiry || null,
+      narration: editNarration || null,
     }).eq("id", editItem.id);
     setEditSaving(false);
     if (error) {
@@ -329,8 +337,12 @@ const PurchasePage = () => {
                   <div>
                     <Label className="text-xs">Admin</Label>
                     <Input value={profile?.full_name || profile?.email || "—"} disabled className="bg-muted" />
-                  </div>
-                </div>
+                   </div>
+                 </div>
+                 <div className="mt-3">
+                   <Label className="text-xs">Narration</Label>
+                   <Input value={narration} onChange={e => setNarration(e.target.value)} placeholder="Purchase narration / remarks" />
+                 </div>
               </CardContent>
             </Card>
 
@@ -514,6 +526,7 @@ const PurchasePage = () => {
                           <TableHead>Purchase Price</TableHead>
                           <TableHead>Batch</TableHead>
                           <TableHead>Expiry</TableHead>
+                          <TableHead>Narration</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -527,6 +540,7 @@ const PurchasePage = () => {
                             <TableCell>₹{h.purchase_price}</TableCell>
                             <TableCell className="text-xs">{h.batch_number ?? "—"}</TableCell>
                             <TableCell className="text-xs">{h.expiry_date ?? "—"}</TableCell>
+                            <TableCell className="text-xs max-w-[150px] truncate">{h.narration ?? "—"}</TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-1">
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(h)}>
@@ -581,6 +595,10 @@ const PurchasePage = () => {
                   <Label className="text-xs">Expiry</Label>
                   <Input type="date" value={editExpiry} onChange={e => setEditExpiry(e.target.value)} />
                 </div>
+              </div>
+              <div>
+                <Label className="text-xs">Narration</Label>
+                <Input value={editNarration} onChange={e => setEditNarration(e.target.value)} placeholder="Remarks" />
               </div>
             </div>
           )}

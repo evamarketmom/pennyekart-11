@@ -1,0 +1,1 @@
+ALTER TABLE public.godown_stock ADD COLUMN narration text DEFAULT NULL;

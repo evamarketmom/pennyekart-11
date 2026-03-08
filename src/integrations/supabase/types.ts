@@ -460,6 +460,7 @@ export type Database = {
           expiry_date: string | null
           godown_id: string
           id: string
+          narration: string | null
           product_id: string
           purchase_number: string | null
           purchase_price: number
@@ -472,6 +473,7 @@ export type Database = {
           expiry_date?: string | null
           godown_id: string
           id?: string
+          narration?: string | null
           product_id: string
           purchase_number?: string | null
           purchase_price?: number
@@ -484,6 +486,7 @@ export type Database = {
           expiry_date?: string | null
           godown_id?: string
           id?: string
+          narration?: string | null
           product_id?: string
           purchase_number?: string | null
           purchase_price?: number
