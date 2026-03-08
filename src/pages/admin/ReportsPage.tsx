@@ -138,10 +138,10 @@ const ReportsPage = () => {
     load();
   }, []);
 
-  // ─── Derived Data ─────────────────────────────────────────────────────────
-  const delivered = orders.filter(o => o.status === "delivered");
-  const cancelled = orders.filter(o => o.status === "cancelled");
-  const pending = orders.filter(o => !["delivered", "cancelled"].includes(o.status));
+  // ─── Derived Data (uses filteredOrders) ────────────────────────────────────
+  const delivered = filteredOrders.filter(o => o.status === "delivered");
+  const cancelled = filteredOrders.filter(o => o.status === "cancelled");
+  const pending = filteredOrders.filter(o => !["delivered", "cancelled"].includes(o.status));
 
   // P&L: revenue = sum of order totals (delivered); COGS = sum of (purchase_rate × qty) for all items
   let grossRevenue = 0, cogs = 0;
