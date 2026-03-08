@@ -32,10 +32,11 @@ interface Order {
 interface Product { id: string; name: string; price: number; purchase_rate: number; mrp: number; stock: number; is_active: boolean; category: string | null; }
 interface SellerProduct { id: string; name: string; price: number; purchase_rate: number; stock: number; seller_id: string; is_approved: boolean; }
 interface GodownStock { id: string; quantity: number; product_id: string; purchase_price: number; godown_id: string; }
-interface Profile { user_id: string; full_name: string | null; user_type: string; local_body_id: string | null; }
+interface Profile { user_id: string; full_name: string | null; user_type: string; local_body_id: string | null; ward_number: number | null; }
 interface SellerWallet { seller_id: string; balance: number; }
 interface SellerWalletTxn { seller_id: string; type: string; amount: number; description: string | null; }
-interface LocalBody { id: string; name: string; }
+interface LocalBody { id: string; name: string; district_id: string; ward_count: number; }
+interface District { id: string; name: string; }
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2,220 70% 50%))", "hsl(var(--chart-3,160 60% 45%))", "hsl(var(--chart-4,30 80% 55%))", "hsl(var(--chart-5,280 65% 60%))"];
 
