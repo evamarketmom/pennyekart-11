@@ -159,7 +159,7 @@ const Index = () => {
       const rows: React.ReactNode[] = [];
 
       if (selectedItems.length > 0) {
-        rows.push(<ProductRow key={selectedCategory} title={selectedCategory} products={toRowFormat(applySorting(selectedItems)selectedItems))} />);
+        rows.push(<ProductRow key={selectedCategory} title={selectedCategory} products={toRowFormat(applySorting(selectedItems)selectedItems)selectedItems))} />);
       } else {
         rows.push(
           <div key="empty" className="py-4 text-center text-muted-foreground">
@@ -173,7 +173,7 @@ const Index = () => {
         .filter(([cat]) => cat !== selectedCategory)
         .forEach(([cat, items]) => {
           if (items.length > 0) {
-            rows.push(<ProductRow key={cat} title={cat} productsapplySorting(items)owFormat(items)} />);
+            rows.push(<ProductRow key={cat} title=applySorting(items) productsapplySorting(items)owFormat(items)} />);
           }
         });
 
@@ -192,7 +192,7 @@ const Index = () => {
       const sectionRows = sectionOrder
         .filter(s => areaBySection[s]?.length > 0)
         .map(sec => (
-          <ProductRow key={sec} title={sectionLabels[sec] || sec} products={toRowFormat(areaBySection[sec])} sectionKey={sec} />
+          <ProductRow key={sec} title={sectionLabels[sec] || pplySorting(areaBySection[sec])RowFormat(areaBySection[sec])} sectionKey={sec} />
         ));
 
       // Products without a section, grouped by category
