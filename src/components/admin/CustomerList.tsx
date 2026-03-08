@@ -3,8 +3,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, MapPin, ShoppingCart, Wallet, TrendingUp, CalendarDays } from "lucide-react";
-import { format } from "date-fns";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Users, MapPin, ShoppingCart, Wallet, TrendingUp, CalendarDays, UserCheck, UserX, Activity, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { format, subDays } from "date-fns";
 
 interface Profile {
   id: string;
@@ -37,10 +39,32 @@ interface CustomerListProps {
   walletSummaries?: Map<string, WalletSummary>;
 }
 
+type ActivityFilter = "all" | "active" | "inactive" | "new" | "never_ordered";
+type InactivePeriod = "7" | "30" | "60" | "90";
+
 const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerListProps) => {
   const [filterPanchayath, setFilterPanchayath] = useState("all");
   const [filterWard, setFilterWard] = useState("all");
   const [sortBy, setSortBy] = useState<string>("newest");
+  const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
+  const [inactivePeriod, setInactivePeriod] = useState<InactivePeriod>("30");
+
+  // Classify customers by activity
+  const classifyCustomer = (c: Profile): "active" | "inactive" | "new" | "never_ordered" => {
+    const o = orderSummaries?.get(c.user_id);
+    if (!o || o.order_count === 0) {
+      // New = signed up within last 7 days and never ordered
+      const joinedDate = c.created_at ? new Date(c.created_at) : null;
+      if (joinedDate && joinedDate >= subDays(new Date(), 7)) return "new";
+      return "never_ordered";
+    }
+    if (o.last_order_date) {
+      const lastOrder = new Date(o.last_order_date);
+      const cutoff = subDays(new Date(), Number(inactivePeriod));
+      return lastOrder >= cutoff ? "active" : "inactive";
+    }
+    return "inactive";
+  };
 
   // Get unique panchayaths with counts
   const panchayathStats = useMemo(() => {
@@ -48,15 +72,8 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
     customers.forEach((c) => {
       const key = c.local_body_id ?? "__none";
       const existing = map.get(key);
-      if (existing) {
-        existing.count++;
-      } else {
-        map.set(key, {
-          name: c.local_body_name ?? "Unknown",
-          type: c.local_body_type ?? "",
-          count: 1,
-        });
-      }
+      if (existing) existing.count++;
+      else map.set(key, { name: c.local_body_name ?? "Unknown", type: c.local_body_type ?? "", count: 1 });
     });
     return map;
   }, [customers]);
@@ -77,9 +94,7 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
     const wards = new Set<number>();
     customers.forEach((c) => {
       if (c.ward_number != null) {
-        if (filterPanchayath === "all" || c.local_body_id === filterPanchayath) {
-          wards.add(c.ward_number);
-        }
+        if (filterPanchayath === "all" || c.local_body_id === filterPanchayath) wards.add(c.ward_number);
       }
     });
     return Array.from(wards).sort((a, b) => a - b);
@@ -90,6 +105,10 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
     let result = customers.filter((c) => {
       if (filterPanchayath !== "all" && c.local_body_id !== filterPanchayath) return false;
       if (filterWard !== "all" && String(c.ward_number) !== filterWard) return false;
+      if (activityFilter !== "all") {
+        const status = classifyCustomer(c);
+        if (activityFilter !== status) return false;
+      }
       return true;
     });
 
@@ -98,34 +117,38 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
       const oB = orderSummaries?.get(b.user_id);
       const wA = walletSummaries?.get(a.user_id);
       const wB = walletSummaries?.get(b.user_id);
-
       switch (sortBy) {
-        case "newest":
-          return (b.created_at ?? "").localeCompare(a.created_at ?? "");
-        case "oldest":
-          return (a.created_at ?? "").localeCompare(b.created_at ?? "");
-        case "most_orders":
-          return (oB?.order_count ?? 0) - (oA?.order_count ?? 0);
-        case "highest_spent":
-          return (oB?.total_spent ?? 0) - (oA?.total_spent ?? 0);
-        case "highest_wallet":
-          return (wB?.balance ?? 0) - (wA?.balance ?? 0);
-        default:
-          return 0;
+        case "newest": return (b.created_at ?? "").localeCompare(a.created_at ?? "");
+        case "oldest": return (a.created_at ?? "").localeCompare(b.created_at ?? "");
+        case "most_orders": return (oB?.order_count ?? 0) - (oA?.order_count ?? 0);
+        case "highest_spent": return (oB?.total_spent ?? 0) - (oA?.total_spent ?? 0);
+        case "highest_wallet": return (wB?.balance ?? 0) - (wA?.balance ?? 0);
+        case "last_active": return (oB?.last_order_date ?? "").localeCompare(oA?.last_order_date ?? "");
+        default: return 0;
       }
     });
-
     return result;
-  }, [customers, filterPanchayath, filterWard, sortBy, orderSummaries, walletSummaries]);
+  }, [customers, filterPanchayath, filterWard, sortBy, activityFilter, inactivePeriod, orderSummaries, walletSummaries]);
 
-  // Aggregate stats
+  // Activity counts (respecting location filters)
+  const activityCounts = useMemo(() => {
+    const locationFiltered = customers.filter((c) => {
+      if (filterPanchayath !== "all" && c.local_body_id !== filterPanchayath) return false;
+      if (filterWard !== "all" && String(c.ward_number) !== filterWard) return false;
+      return true;
+    });
+    const counts = { all: locationFiltered.length, active: 0, inactive: 0, new: 0, never_ordered: 0 };
+    locationFiltered.forEach((c) => {
+      const status = classifyCustomer(c);
+      counts[status]++;
+    });
+    return counts;
+  }, [customers, filterPanchayath, filterWard, inactivePeriod, orderSummaries]);
+
+  // Aggregate stats for filtered view
   const stats = useMemo(() => {
-    let totalOrders = 0;
-    let totalRevenue = 0;
-    let activeCustomers = 0;
-    let totalWalletBalance = 0;
-
-    customers.forEach((c) => {
+    let totalOrders = 0, totalRevenue = 0, activeCustomers = 0, totalWalletBalance = 0;
+    filtered.forEach((c) => {
       const o = orderSummaries?.get(c.user_id);
       const w = walletSummaries?.get(c.user_id);
       if (o) {
@@ -135,9 +158,8 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
       }
       if (w) totalWalletBalance += w.balance;
     });
-
     return { totalOrders, totalRevenue, activeCustomers, totalWalletBalance };
-  }, [customers, orderSummaries, walletSummaries]);
+  }, [filtered, orderSummaries, walletSummaries]);
 
   const topPanchayaths = useMemo(() => {
     return Array.from(panchayathStats.entries())
@@ -147,6 +169,45 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
   }, [panchayathStats]);
 
   const fmt = (n: number) => n >= 1000 ? `₹${(n / 1000).toFixed(1)}K` : `₹${n.toFixed(0)}`;
+
+  const getStatusBadge = (c: Profile) => {
+    const status = classifyCustomer(c);
+    switch (status) {
+      case "active": return <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0 text-[10px]">Active</Badge>;
+      case "inactive": return <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0 text-[10px]">Inactive</Badge>;
+      case "new": return <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-0 text-[10px]">New</Badge>;
+      case "never_ordered": return <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0 text-[10px]">Never Ordered</Badge>;
+    }
+  };
+
+  const exportCSV = () => {
+    const headers = ["#", "Name", "Mobile", "Status", "Joined", "Orders", "Total Spent", "Last Order", "Wallet", "Panchayath", "Ward"];
+    const rows = filtered.map((c, i) => {
+      const o = orderSummaries?.get(c.user_id);
+      const w = walletSummaries?.get(c.user_id);
+      return [
+        i + 1,
+        c.full_name ?? "",
+        c.mobile_number ?? "",
+        classifyCustomer(c),
+        c.created_at ? format(new Date(c.created_at), "dd MMM yyyy") : "",
+        o?.order_count ?? 0,
+        o?.total_spent?.toFixed(0) ?? "0",
+        o?.last_order_date ? format(new Date(o.last_order_date), "dd MMM yyyy") : "",
+        w?.balance?.toFixed(0) ?? "0",
+        c.local_body_name ?? "",
+        c.ward_number ?? "",
+      ].join(",");
+    });
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `customers_${activityFilter}_${format(new Date(), "yyyyMMdd")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-4">
@@ -159,7 +220,8 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <p className="text-2xl font-bold">{customers.length}</p>
+            <p className="text-2xl font-bold">{filtered.length}</p>
+            {filtered.length !== customers.length && <p className="text-[10px] text-muted-foreground">of {customers.length}</p>}
           </CardContent>
         </Card>
         <Card>
@@ -185,13 +247,13 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
         <Card>
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-              <Users className="h-3.5 w-3.5" /> Active Buyers
+              <UserCheck className="h-3.5 w-3.5" /> Active Buyers
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
             <p className="text-2xl font-bold">{stats.activeCustomers}</p>
             <p className="text-[10px] text-muted-foreground">
-              {customers.length > 0 ? ((stats.activeCustomers / customers.length) * 100).toFixed(0) : 0}% of total
+              {filtered.length > 0 ? ((stats.activeCustomers / filtered.length) * 100).toFixed(0) : 0}% of filtered
             </p>
           </CardContent>
         </Card>
@@ -207,11 +269,62 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
         </Card>
       </div>
 
+      {/* Activity Status Tabs */}
+      <Card>
+        <CardContent className="p-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+              <Activity className="h-4 w-4" /> Activity Report
+            </div>
+            <Tabs value={activityFilter} onValueChange={(v) => setActivityFilter(v as ActivityFilter)}>
+              <TabsList className="h-8">
+                <TabsTrigger value="all" className="text-xs h-7 px-3">
+                  All <Badge variant="outline" className="ml-1 text-[10px] px-1.5">{activityCounts.all}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="active" className="text-xs h-7 px-3">
+                  <UserCheck className="h-3 w-3 mr-1" /> Active <Badge className="ml-1 text-[10px] px-1.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0">{activityCounts.active}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="inactive" className="text-xs h-7 px-3">
+                  <UserX className="h-3 w-3 mr-1" /> Inactive <Badge className="ml-1 text-[10px] px-1.5 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0">{activityCounts.inactive}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="new" className="text-xs h-7 px-3">
+                  New <Badge className="ml-1 text-[10px] px-1.5 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-0">{activityCounts.new}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="never_ordered" className="text-xs h-7 px-3">
+                  Never Ordered <Badge className="ml-1 text-[10px] px-1.5 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">{activityCounts.never_ordered}</Badge>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            {(activityFilter === "inactive" || activityFilter === "all") && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">Inactive if no order in:</span>
+                <Select value={inactivePeriod} onValueChange={(v) => setInactivePeriod(v as InactivePeriod)}>
+                  <SelectTrigger className="w-24 h-7 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7">7 days</SelectItem>
+                    <SelectItem value="30">30 days</SelectItem>
+                    <SelectItem value="60">60 days</SelectItem>
+                    <SelectItem value="90">90 days</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <Button variant="outline" size="sm" className="ml-auto h-7 text-xs gap-1" onClick={exportCSV}>
+              <Download className="h-3 w-3" /> Export CSV
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Top Panchayaths */}
       {topPanchayaths.length > 0 && (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
           {topPanchayaths.map(([key, val]) => (
-            <Card key={key} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => { setFilterPanchayath(key); setFilterWard("all"); }}>
+            <Card
+              key={key}
+              className={`cursor-pointer transition-colors ${filterPanchayath === key ? "border-primary bg-primary/5" : "hover:border-primary/50"}`}
+              onClick={() => { setFilterPanchayath(filterPanchayath === key ? "all" : key); setFilterWard("all"); }}
+            >
               <CardHeader className="pb-1 pt-3 px-3">
                 <CardTitle className="text-[10px] font-medium text-muted-foreground flex items-center gap-1 truncate">
                   <MapPin className="h-3 w-3 shrink-0" /> {val.name}
@@ -262,12 +375,13 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
               <SelectItem value="most_orders">Most Orders</SelectItem>
               <SelectItem value="highest_spent">Highest Spent</SelectItem>
               <SelectItem value="highest_wallet">Highest Wallet</SelectItem>
+              <SelectItem value="last_active">Last Active</SelectItem>
             </SelectContent>
           </Select>
         </div>
-        {(filterPanchayath !== "all" || filterWard !== "all") && (
-          <Badge variant="secondary" className="cursor-pointer" onClick={() => { setFilterPanchayath("all"); setFilterWard("all"); }}>
-            Clear filters ✕
+        {(filterPanchayath !== "all" || filterWard !== "all" || activityFilter !== "all") && (
+          <Badge variant="secondary" className="cursor-pointer" onClick={() => { setFilterPanchayath("all"); setFilterWard("all"); setActivityFilter("all"); }}>
+            Clear all filters ✕
           </Badge>
         )}
         <Badge variant="outline" className="ml-auto">{filtered.length} customers</Badge>
@@ -281,6 +395,7 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
               <TableHead>#</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Mobile</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Joined</TableHead>
               <TableHead className="text-center">Orders</TableHead>
               <TableHead className="text-right">Total Spent</TableHead>
@@ -299,6 +414,7 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
                   <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                   <TableCell className="font-medium">{c.full_name ?? "—"}</TableCell>
                   <TableCell>{c.mobile_number ?? "—"}</TableCell>
+                  <TableCell>{getStatusBadge(c)}</TableCell>
                   <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                     {c.created_at ? (
                       <span className="flex items-center gap-1">
@@ -318,9 +434,7 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
                     {o && o.total_spent > 0 ? `₹${o.total_spent.toFixed(0)}` : "—"}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                    {o?.last_order_date
-                      ? format(new Date(o.last_order_date), "dd MMM yyyy")
-                      : "—"}
+                    {o?.last_order_date ? format(new Date(o.last_order_date), "dd MMM yyyy") : "—"}
                   </TableCell>
                   <TableCell className="text-right">
                     {w && w.balance > 0 ? (
@@ -340,7 +454,7 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
             })}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={10} className="text-center text-muted-foreground py-8">No customers found</TableCell>
+                <TableCell colSpan={11} className="text-center text-muted-foreground py-8">No customers found</TableCell>
               </TableRow>
             )}
           </TableBody>
