@@ -202,9 +202,13 @@ const PurchasePage = () => {
     } else {
       toast({ title: `Purchase #${purchaseNumber} — Stock added to ${selectedGodownIds.length} godown(s), ${validItems.length} product(s)` });
       setItems([]);
-      // Fetch next number
-      await fetchNextPurchaseNumber();
+      setSelectedGodownIds([]);
       setPurchaseDate(new Date().toISOString().split("T")[0]);
+      // Fetch next number after a brief delay to ensure DB commit
+      const { data: counterData } = await supabase.from("purchase_counter").select("last_number").limit(1).single();
+      if (counterData) {
+        setPurchaseNumber(formatPurchaseNumber((counterData as any).last_number + 1));
+      }
       if (mrpUpdates.length > 0) {
         const { data } = await supabase.from("products").select("id, name, price, category, purchase_rate, mrp, discount_rate").eq("is_active", true).order("name");
         if (data) setProducts(data as Product[]);
