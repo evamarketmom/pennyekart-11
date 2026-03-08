@@ -19,6 +19,7 @@ interface Profile {
   local_body_type?: string | null;
   district_name?: string | null;
   created_at?: string;
+  last_login_at?: string | null;
 }
 
 interface OrderSummary {
@@ -124,6 +125,7 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
         case "highest_spent": return (oB?.total_spent ?? 0) - (oA?.total_spent ?? 0);
         case "highest_wallet": return (wB?.balance ?? 0) - (wA?.balance ?? 0);
         case "last_active": return (oB?.last_order_date ?? "").localeCompare(oA?.last_order_date ?? "");
+        case "last_login": return (b.last_login_at ?? "").localeCompare(a.last_login_at ?? "");
         default: return 0;
       }
     });
@@ -231,7 +233,7 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
   };
 
   const exportCSV = () => {
-    const headers = ["#", "Name", "Mobile", "Status", "Joined", "Orders", "Total Spent", "Last Order", "Wallet", "Panchayath", "Ward"];
+    const headers = ["#", "Name", "Mobile", "Status", "Joined", "Last Login", "Orders", "Total Spent", "Last Order", "Wallet", "Panchayath", "Ward"];
     const rows = filtered.map((c, i) => {
       const o = orderSummaries?.get(c.user_id);
       const w = walletSummaries?.get(c.user_id);
@@ -241,6 +243,7 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
         c.mobile_number ?? "",
         classifyCustomer(c),
         c.created_at ? format(new Date(c.created_at), "dd MMM yyyy") : "",
+        c.last_login_at ? format(new Date(c.last_login_at), "dd MMM yyyy HH:mm") : "Never",
         o?.order_count ?? 0,
         o?.total_spent?.toFixed(0) ?? "0",
         o?.last_order_date ? format(new Date(o.last_order_date), "dd MMM yyyy") : "",
@@ -477,6 +480,7 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
               <SelectItem value="highest_spent">Highest Spent</SelectItem>
               <SelectItem value="highest_wallet">Highest Wallet</SelectItem>
               <SelectItem value="last_active">Last Active</SelectItem>
+              <SelectItem value="last_login">Last Login</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -498,6 +502,7 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
               <TableHead>Mobile</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Joined</TableHead>
+              <TableHead>Last Login</TableHead>
               <TableHead className="text-center">Orders</TableHead>
               <TableHead className="text-right">Total Spent</TableHead>
               <TableHead>Last Order</TableHead>
@@ -523,6 +528,16 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
                         {format(new Date(c.created_at), "dd MMM yyyy")}
                       </span>
                     ) : "—"}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                    {c.last_login_at ? (
+                      <div className="flex flex-col">
+                        <span className="font-medium text-foreground">{getRelativeTime(c.last_login_at)}</span>
+                        <span className="text-[10px]">{format(new Date(c.last_login_at), "dd MMM, HH:mm")}</span>
+                      </div>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px] text-muted-foreground">Never</Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-center">
                     {o && o.order_count > 0 ? (
@@ -560,7 +575,7 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
             })}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={11} className="text-center text-muted-foreground py-8">No customers found</TableCell>
+                <TableCell colSpan={12} className="text-center text-muted-foreground py-8">No customers found</TableCell>
               </TableRow>
             )}
           </TableBody>

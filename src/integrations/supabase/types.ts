@@ -998,6 +998,7 @@ export type Database = {
           id: string
           is_approved: boolean
           is_super_admin: boolean
+          last_login_at: string | null
           local_body_id: string | null
           mobile_number: string | null
           role_id: string | null
@@ -1027,6 +1028,7 @@ export type Database = {
           id?: string
           is_approved?: boolean
           is_super_admin?: boolean
+          last_login_at?: string | null
           local_body_id?: string | null
           mobile_number?: string | null
           role_id?: string | null
@@ -1056,6 +1058,7 @@ export type Database = {
           id?: string
           is_approved?: boolean
           is_super_admin?: boolean
+          last_login_at?: string | null
           local_body_id?: string | null
           mobile_number?: string | null
           role_id?: string | null

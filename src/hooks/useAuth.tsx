@@ -86,6 +86,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Defer Supabase calls to avoid deadlock in onAuthStateChange
         setTimeout(() => {
           if (!mountedRef.current) return;
+          // Update last_login_at on sign in
+          if (_event === 'SIGNED_IN') {
+            supabase.from("profiles").update({ last_login_at: new Date().toISOString() }).eq("user_id", newSession.user.id).then();
+          }
           fetchProfile(newSession.user.id).finally(() => {
             if (mountedRef.current) setLoading(false);
           });
