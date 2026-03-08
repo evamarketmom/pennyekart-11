@@ -285,9 +285,14 @@ const OffersPage = () => {
                               <span className="line-through">₹{product.mrp}</span>
                             )}
                           </div>
-                          {product.category && (
-                            <Badge variant="outline" className="text-[10px] mt-1">{product.category}</Badge>
-                          )}
+                          <div className="flex items-center gap-1 mt-1">
+                            {product.category && (
+                              <Badge variant="outline" className="text-[10px]">{product.category}</Badge>
+                            )}
+                            {product.source === "seller" && (
+                              <Badge variant="secondary" className="text-[10px]">Seller</Badge>
+                            )}
+                          </div>
                         </div>
                         {canEdit && (
                           <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleRemoveFromSection(product)}>
