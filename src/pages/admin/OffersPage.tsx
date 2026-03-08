@@ -88,6 +88,7 @@ const OffersPage = () => {
   const [districts, setDistricts] = useState<District[]>([]);
   const [localBodies, setLocalBodies] = useState<LocalBody[]>([]);
   const [godownWards, setGodownWards] = useState<GodownWard[]>([]);
+  const [godownLocalBodies, setGodownLocalBodies] = useState<GodownLocalBody[]>([]);
   const [godownStock, setGodownStock] = useState<GodownStock[]>([]);
   const [sellerGodownAssignments, setSellerGodownAssignments] = useState<SellerGodownAssignment[]>([]);
   const [sellerProductsList, setSellerProductsList] = useState<SellerProduct[]>([]);
