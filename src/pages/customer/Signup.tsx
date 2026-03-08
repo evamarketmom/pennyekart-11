@@ -119,7 +119,7 @@ const CustomerSignup = () => {
         }
       } else {
         toast({ title: "Registration successful!", description: "You can now start shopping." });
-        navigate("/");
+        navigate("/", { state: { showSignupReward: true } });
       }
     } catch (err) {
       toast({ title: "Connection error", description: "Please check your internet connection and try again.", variant: "destructive" });

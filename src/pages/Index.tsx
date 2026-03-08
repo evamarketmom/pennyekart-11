@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import PlatformSelector from "@/components/PlatformSelector";
 import SearchBar from "@/components/SearchBar";
 import CategoryBar from "@/components/CategoryBar";
@@ -10,17 +10,44 @@ import MobileBottomNav from "@/components/MobileBottomNav";
 import FlashSaleBanner from "@/components/FlashSaleBanner";
 import Footer from "@/components/Footer";
 import CartReminderBanner from "@/components/CartReminderBanner";
+import WalletRewardPopup from "@/components/WalletRewardPopup";
 import { useAuth } from "@/hooks/useAuth";
 import { useAreaProducts } from "@/hooks/useAreaProducts";
 import { useSectionProducts } from "@/hooks/useSectionProducts";
+import { supabase } from "@/integrations/supabase/client";
 
 const sectionOrder = ["featured", "sponsors", "most_ordered", "new_arrivals", "low_budget"];
 
 const Index = () => {
   const [platform, setPlatform] = useState("pennyekart");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showSignupReward, setShowSignupReward] = useState(false);
+  const [signupRewardAmount, setSignupRewardAmount] = useState(0);
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, profile } = useAuth();
+
+  // Check for signup reward popup
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.showSignupReward && user) {
+      // Clear the state so it doesn't show again on refresh
+      window.history.replaceState({}, document.title);
+      // Fetch the wallet balance to show the signup bonus
+      const fetchWalletBonus = async () => {
+        const { data } = await supabase
+          .from("customer_wallets")
+          .select("balance")
+          .eq("customer_user_id", user.id)
+          .maybeSingle();
+        const amount = data?.balance ?? 50;
+        setSignupRewardAmount(Number(amount));
+        setShowSignupReward(true);
+      };
+      // Small delay to let the profile/wallet creation trigger complete
+      setTimeout(fetchWalletBonus, 1500);
+    }
+  }, [location.state, user]);
   const { products: areaProducts, loading: areaLoading } = useAreaProducts();
   const { grouped: sectionGrouped, loading: sectionLoading } = useSectionProducts();
 
@@ -202,6 +229,13 @@ const Index = () => {
 
       <Footer />
       <MobileBottomNav />
+
+      <WalletRewardPopup
+        open={showSignupReward}
+        onClose={() => setShowSignupReward(false)}
+        rewards={[{ amount: signupRewardAmount, desc: "Signup bonus credited to your wallet" }]}
+        totalAmount={signupRewardAmount}
+      />
     </div>
   );
 };
