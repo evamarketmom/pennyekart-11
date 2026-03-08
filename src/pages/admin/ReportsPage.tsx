@@ -32,10 +32,11 @@ interface Order {
 interface Product { id: string; name: string; price: number; purchase_rate: number; mrp: number; stock: number; is_active: boolean; category: string | null; }
 interface SellerProduct { id: string; name: string; price: number; purchase_rate: number; stock: number; seller_id: string; is_approved: boolean; }
 interface GodownStock { id: string; quantity: number; product_id: string; purchase_price: number; godown_id: string; }
-interface Profile { user_id: string; full_name: string | null; user_type: string; local_body_id: string | null; }
+interface Profile { user_id: string; full_name: string | null; user_type: string; local_body_id: string | null; ward_number: number | null; }
 interface SellerWallet { seller_id: string; balance: number; }
 interface SellerWalletTxn { seller_id: string; type: string; amount: number; description: string | null; }
-interface LocalBody { id: string; name: string; }
+interface LocalBody { id: string; name: string; district_id: string; ward_count: number; }
+interface District { id: string; name: string; }
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2,220 70% 50%))", "hsl(var(--chart-3,160 60% 45%))", "hsl(var(--chart-4,30 80% 55%))", "hsl(var(--chart-5,280 65% 60%))"];
 
@@ -66,6 +67,7 @@ const ReportsPage = () => {
   const [sellerWallets, setSellerWallets] = useState<SellerWallet[]>([]);
   const [sellerTxns, setSellerTxns] = useState<SellerWalletTxn[]>([]);
   const [localBodies, setLocalBodies] = useState<LocalBody[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
   const [loading, setLoading] = useState(true);
 
   // ─── Filters ───────────────────────────────────────────────────────────────
@@ -74,6 +76,9 @@ const ReportsPage = () => {
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterDistrict, setFilterDistrict] = useState<string>("all");
+  const [filterLocalBody, setFilterLocalBody] = useState<string>("all");
+  const [filterWard, setFilterWard] = useState<string>("all");
 
   // Compute available categories
   const categories = useMemo(() => {
@@ -103,7 +108,20 @@ const ReportsPage = () => {
   const sellerProdMapEarly: Record<string, SellerProduct & { category?: string | null }> = {};
   sellerProducts.forEach(sp => { sellerProdMapEarly[sp.id] = sp as any; });
 
-  // Filter orders by date range, status, and category
+  // Profile lookup for location filtering
+  const profileMap = useMemo(() => {
+    const m: Record<string, Profile> = {};
+    profiles.forEach(p => { m[p.user_id] = p; });
+    return m;
+  }, [profiles]);
+
+
+  const localBodyIdsForDistrict = useMemo(() => {
+    if (filterDistrict === "all") return null;
+    return new Set(localBodies.filter(lb => lb.district_id === filterDistrict).map(lb => lb.id));
+  }, [localBodies, filterDistrict]);
+
+  // Filter orders by date range, status, category, and location
   const filteredOrders = useMemo(() => {
     return orders.filter(o => {
       if (dateFrom && dateTo) {
@@ -119,25 +137,52 @@ const ReportsPage = () => {
         });
         if (!hasCategory) return false;
       }
+      // Location filters
+      if (filterDistrict !== "all" || filterLocalBody !== "all" || filterWard !== "all") {
+        if (!o.user_id) return false;
+        const prof = profileMap[o.user_id];
+        if (!prof) return false;
+        if (filterLocalBody !== "all") {
+          if (prof.local_body_id !== filterLocalBody) return false;
+          if (filterWard !== "all" && prof.ward_number !== Number(filterWard)) return false;
+        } else if (filterDistrict !== "all") {
+          if (!prof.local_body_id || !localBodyIdsForDistrict?.has(prof.local_body_id)) return false;
+        }
+      }
       return true;
     });
-  }, [orders, dateFrom, dateTo, filterStatus, filterCategory, productMapEarly, sellerProdMapEarly]);
+  }, [orders, dateFrom, dateTo, filterStatus, filterCategory, productMapEarly, sellerProdMapEarly, filterDistrict, filterLocalBody, filterWard, profileMap, localBodyIdsForDistrict]);
+
+  // Location filter derived data
+  const filteredLocalBodies = useMemo(() => {
+    if (filterDistrict === "all") return localBodies;
+    return localBodies.filter(lb => lb.district_id === filterDistrict);
+  }, [localBodies, filterDistrict]);
+
+  const wardOptions = useMemo(() => {
+    if (filterLocalBody === "all") return [];
+    const lb = localBodies.find(l => l.id === filterLocalBody);
+    if (!lb) return [];
+    return Array.from({ length: lb.ward_count }, (_, i) => i + 1);
+  }, [localBodies, filterLocalBody]);
+
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       const [
         { data: ord }, { data: prod }, { data: sprod }, { data: gstock },
-        { data: prof }, { data: sw }, { data: stxn }, { data: lb }
+        { data: prof }, { data: sw }, { data: stxn }, { data: lb }, { data: dist }
       ] = await Promise.all([
         supabase.from("orders").select("id,status,total,items,created_at,user_id,seller_id,assigned_delivery_staff_id,godown_id").order("created_at", { ascending: false }),
         supabase.from("products").select("id,name,price,purchase_rate,mrp,stock,is_active,category"),
         supabase.from("seller_products").select("id,name,price,purchase_rate,stock,seller_id,is_approved"),
         supabase.from("godown_stock").select("id,quantity,product_id,purchase_price,godown_id"),
-        supabase.from("profiles").select("user_id,full_name,user_type,local_body_id"),
+        supabase.from("profiles").select("user_id,full_name,user_type,local_body_id,ward_number"),
         supabase.from("seller_wallets").select("seller_id,balance"),
         supabase.from("seller_wallet_transactions").select("seller_id,type,amount,description"),
-        supabase.from("locations_local_bodies").select("id,name"),
+        supabase.from("locations_local_bodies").select("id,name,district_id,ward_count"),
+        supabase.from("locations_districts").select("id,name"),
       ]);
       setOrders((ord ?? []) as Order[]);
       setProducts((prod ?? []) as Product[]);
@@ -147,6 +192,7 @@ const ReportsPage = () => {
       setSellerWallets((sw ?? []) as SellerWallet[]);
       setSellerTxns((stxn ?? []) as SellerWalletTxn[]);
       setLocalBodies((lb ?? []) as LocalBody[]);
+      setDistricts((dist ?? []) as District[]);
       setLoading(false);
     };
     load();
@@ -359,9 +405,52 @@ const ReportsPage = () => {
             </SelectContent>
           </Select>
 
+          {/* District Filter */}
+          <Select value={filterDistrict} onValueChange={(v) => { setFilterDistrict(v); setFilterLocalBody("all"); setFilterWard("all"); }}>
+            <SelectTrigger className="w-[130px] h-9 text-xs">
+              <SelectValue placeholder="District" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Districts</SelectItem>
+              {districts.map(d => (
+                <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Panchayath Filter */}
+          {filterDistrict !== "all" && (
+            <Select value={filterLocalBody} onValueChange={(v) => { setFilterLocalBody(v); setFilterWard("all"); }}>
+              <SelectTrigger className="w-[140px] h-9 text-xs">
+                <SelectValue placeholder="Panchayath" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Panchayaths</SelectItem>
+                {filteredLocalBodies.map(lb => (
+                  <SelectItem key={lb.id} value={lb.id}>{lb.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {/* Ward Filter */}
+          {filterLocalBody !== "all" && wardOptions.length > 0 && (
+            <Select value={filterWard} onValueChange={setFilterWard}>
+              <SelectTrigger className="w-[110px] h-9 text-xs">
+                <SelectValue placeholder="Ward" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Wards</SelectItem>
+                {wardOptions.map(w => (
+                  <SelectItem key={w} value={String(w)}>Ward {w}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
           {/* Reset */}
-          {(dateRange !== "all" || filterStatus !== "all" || filterCategory !== "all") && (
-            <Button variant="ghost" size="sm" className="text-xs h-9" onClick={() => { setDateRange("all"); setDateFrom(undefined); setDateTo(undefined); setFilterStatus("all"); setFilterCategory("all"); }}>
+          {(dateRange !== "all" || filterStatus !== "all" || filterCategory !== "all" || filterDistrict !== "all") && (
+            <Button variant="ghost" size="sm" className="text-xs h-9" onClick={() => { setDateRange("all"); setDateFrom(undefined); setDateTo(undefined); setFilterStatus("all"); setFilterCategory("all"); setFilterDistrict("all"); setFilterLocalBody("all"); setFilterWard("all"); }}>
               Reset
             </Button>
           )}
@@ -369,7 +458,7 @@ const ReportsPage = () => {
       </div>
 
       {/* Active filters summary */}
-      {(dateRange !== "all" || filterStatus !== "all" || filterCategory !== "all") && (
+      {(dateRange !== "all" || filterStatus !== "all" || filterCategory !== "all" || filterDistrict !== "all") && (
         <div className="mb-4 flex items-center gap-2 text-xs text-muted-foreground">
           <Filter className="h-3.5 w-3.5" />
           <span>
@@ -377,6 +466,9 @@ const ReportsPage = () => {
             {dateFrom && dateTo && ` • ${format(dateFrom, "dd MMM yy")} – ${format(dateTo, "dd MMM yy")}`}
             {filterStatus !== "all" && ` • Status: ${filterStatus}`}
             {filterCategory !== "all" && ` • Category: ${filterCategory}`}
+            {filterDistrict !== "all" && ` • District: ${districts.find(d => d.id === filterDistrict)?.name}`}
+            {filterLocalBody !== "all" && ` • ${localBodies.find(lb => lb.id === filterLocalBody)?.name}`}
+            {filterWard !== "all" && ` • Ward ${filterWard}`}
           </span>
         </div>
       )}
