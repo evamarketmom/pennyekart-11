@@ -24,7 +24,7 @@ interface Product {
 }
 
 const sectionConfig = [
-  { key: "featured", label: "Featured Products", icon: Star, color: "text-yellow-500", autoAssign: false },
+  { key: "featured", label: "Featured Products", icon: Star, color: "text-yellow-500", autoAssign: true },
   { key: "most_ordered", label: "Most Ordered Items", icon: TrendingUp, color: "text-blue-500", autoAssign: true },
   { key: "new_arrivals", label: "New Arrivals", icon: Sparkles, color: "text-green-500", autoAssign: true },
   { key: "low_budget", label: "Low Budget Picks", icon: Wallet, color: "text-orange-500", autoAssign: true },
