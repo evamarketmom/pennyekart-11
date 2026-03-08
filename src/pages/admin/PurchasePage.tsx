@@ -272,6 +272,7 @@ const PurchasePage = () => {
       purchase_price: editPrice,
       batch_number: editBatch || null,
       expiry_date: editExpiry || null,
+      narration: editNarration || null,
     }).eq("id", editItem.id);
     setEditSaving(false);
     if (error) {
