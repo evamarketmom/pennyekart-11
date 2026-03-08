@@ -62,6 +62,18 @@ const Cart = () => {
             setWalletMinUsage(data.min_usage_amount);
           }
         });
+      // Fetch max redeem rule
+      supabase
+        .from("app_settings")
+        .select("key, value")
+        .in("key", ["wallet_rule_max_redeem_enabled", "wallet_rule_max_redeem_amount"])
+        .then(({ data }) => {
+          const sm = new Map((data ?? []).map((s: any) => [s.key, s.value]));
+          if (sm.get("wallet_rule_max_redeem_enabled") === "true") {
+            const cap = Number(sm.get("wallet_rule_max_redeem_amount") || 0);
+            if (cap > 0) setWalletMaxRedeem(cap);
+          }
+        });
     }
   }, [user]);
 
