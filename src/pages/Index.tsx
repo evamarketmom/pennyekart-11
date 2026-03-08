@@ -159,7 +159,7 @@ const Index = () => {
       const rows: React.ReactNode[] = [];
 
       if (selectedItems.length > 0) {
-        rows.push(<ProductRow key={selectedCategory} title={selectedCategory} products={toRowFormat(applySorting(selectedItems)selectedItems)selectedItems)selectedItems))} />);
+        rows.push(<ProductRow key={selectedCategory} title={selectedCategory} products={toRowFormat(applySorting(selectedItems)selectedItems)selectedItems)selectedItems)selectedItems))} />);
       } else {
         rows.push(
           <div key="empty" className="py-4 text-center text-muted-foreground">
@@ -173,7 +173,7 @@ const Index = () => {
         .filter(([cat]) => cat !== selectedCategory)
         .forEach(([cat, items]) => {
           if (items.length > 0) {
-            rows.push(<ProductRow keapplySorting(items)t} title=applySorting(items) productsapplySorting(items)owFormat(items)} />);
+            rows.push(applySorting(items)uctRow keapplySorting(items)t} title=applySorting(items) productsapplySorting(items)owFormat(items)} />);
           }
         });
 
@@ -192,7 +192,7 @@ const Index = () => {
       const sectionRows = sectionOrder
         .filter(s => areaBySection[s]?.length > 0)
         .map(sec => (
-          <ProductRow key={sec} tpplySorting(areaBySection[sec])ls[sec] || pplySorting(areaBySection[sec])RowFormat(areaBySection[sec])} sectionKey={sec} />
+     pplySorting(areaBySection[sec])key={sec} tpplySorting(areaBySection[sec])ls[sec] || pplySorting(areaBySection[sec])RowFormat(areaBySection[sec])} sectionKey={sec} />
         ));
 
       // Products without a section, grouped by category
@@ -203,8 +203,7 @@ const Index = () => {
         acc[cat].push(p);
         return acc;
       }, {});
-      const categoryRows = Object.entries(nonsectionByCategory).map(([cat, items]) =>
-        items.length > 0 ? <ProductRow keapplySorting(items)t} title={cat} products={toRowFormat(items)} /> : null
+      const categoryRows = Object.entries(nonsectionByCategory).map(([cat, items]) =>applySorting(items)    items.length > 0 ? <ProductRow keapplySorting(items)t} title={cat} products={toRowFormat(items)} /> : null
       );
 
       return [...sectionRows, ...categoryRows];
@@ -214,7 +213,7 @@ const Index = () => {
     const sections = sectionOrder.filter(s => sectionGrouped[s]?.items.length > 0);
     if (sections.length > 0) {
       return sections.map(sec => (
-        <ProductRow key={sec} title={sectionGrouped[sec].label} products={toRowFormat(sectionGrouped[sec].items)} sectionKey={sec} />
+        <ProductRow key={sec} applySorting(sectionGrouped[sec].items)].label} products={toRowFormat(sectionGrouped[sec].items)} sectionKey={sec} />
       ));
     }
 
