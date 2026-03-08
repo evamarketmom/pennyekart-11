@@ -23,7 +23,7 @@ const sectionLabels: Record<string, string> = {
 };
 
 const fetchSectionProducts = async (): Promise<SectionProduct[]> => {
-  // First try products with sections
+  // Fetch admin products with sections
   const { data: sectionData } = await supabase
     .from("products")
     .select("id, name, price, mrp, discount_rate, image_url, category, section, coming_soon, wallet_points")
@@ -32,8 +32,25 @@ const fetchSectionProducts = async (): Promise<SectionProduct[]> => {
     .neq("section", "")
     .limit(50);
 
-  if (sectionData && sectionData.length > 0) {
-    return sectionData as SectionProduct[];
+  // Fetch featured seller products
+  const { data: sellerFeatured } = await supabase
+    .from("seller_products")
+    .select("id, name, price, mrp, discount_rate, image_url, category, coming_soon, wallet_points")
+    .eq("is_active", true)
+    .eq("is_approved", true)
+    .eq("is_featured", true)
+    .limit(20);
+
+  const adminProducts = (sectionData ?? []) as SectionProduct[];
+  const sellerProducts = (sellerFeatured ?? []).map((p) => ({
+    ...p,
+    section: "featured" as string,
+  })) as SectionProduct[];
+
+  const combined = [...adminProducts, ...sellerProducts];
+
+  if (combined.length > 0) {
+    return combined;
   }
 
   // Fallback: fetch all active products (no section filter)
