@@ -179,7 +179,9 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries, onRefresh }:
       }
       if (filterPanchayath !== "all" && c.local_body_id !== filterPanchayath) return false;
       if (filterWard !== "all" && String(c.ward_number) !== filterWard) return false;
-      if (activityFilter !== "all") {
+      if (activityFilter === "blocked") {
+        if (!c.is_blocked) return false;
+      } else if (activityFilter !== "all") {
         const status = classifyCustomer(c);
         if (activityFilter !== status) return false;
       }
