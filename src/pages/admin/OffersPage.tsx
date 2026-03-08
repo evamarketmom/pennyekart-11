@@ -127,10 +127,11 @@ const OffersPage = () => {
   };
 
   const fetchAreaData = async () => {
-    const [distRes, lbRes, gwRes, gsRes, sgaRes, spRes] = await Promise.all([
+    const [distRes, lbRes, gwRes, glbRes, gsRes, sgaRes, spRes] = await Promise.all([
       supabase.from("locations_districts").select("id, name").eq("is_active", true).order("name"),
       supabase.from("locations_local_bodies").select("id, name, district_id, ward_count").eq("is_active", true).order("name"),
       supabase.from("godown_wards").select("godown_id, local_body_id, ward_number"),
+      supabase.from("godown_local_bodies").select("godown_id, local_body_id"),
       supabase.from("godown_stock").select("godown_id, product_id, quantity").gt("quantity", 0),
       supabase.from("seller_godown_assignments").select("seller_id, godown_id"),
       supabase.from("seller_products").select("id, seller_id").eq("is_active", true).eq("is_approved", true),
@@ -138,6 +139,7 @@ const OffersPage = () => {
     setDistricts(distRes.data ?? []);
     setLocalBodies(lbRes.data ?? []);
     setGodownWards(gwRes.data ?? []);
+    setGodownLocalBodies(glbRes.data ?? []);
     setGodownStock(gsRes.data ?? []);
     setSellerGodownAssignments(sgaRes.data ?? []);
     setSellerProductsList(spRes.data ?? []);
