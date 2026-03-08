@@ -88,6 +88,14 @@ const RULE_DEFINITIONS = [
     enabledKey: "wallet_rule_min_purchase_enabled",
     amountKey: "wallet_rule_min_purchase_amount",
   },
+  {
+    key: "max_redeem_per_purchase",
+    label: "Max Wallet Redeemable Per Purchase",
+    description: "Limit how much wallet balance a customer can use per order. E.g. set ₹20 so even if wallet has ₹1000, only ₹20 can be deducted per purchase.",
+    icon: <CreditCard className="h-5 w-5 text-red-600" />,
+    enabledKey: "wallet_rule_max_redeem_enabled",
+    amountKey: "wallet_rule_max_redeem_amount",
+  },
 ];
 
 const WalletManagementPage = () => {
