@@ -535,7 +535,12 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries }: CustomerLi
                     {o && o.total_spent > 0 ? `₹${o.total_spent.toFixed(0)}` : "—"}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                    {o?.last_order_date ? format(new Date(o.last_order_date), "dd MMM yyyy") : "—"}
+                    {o?.last_order_date ? (
+                      <div className="flex flex-col">
+                        <span className="font-medium text-foreground">{getRelativeTime(o.last_order_date)}</span>
+                        <span className="text-[10px]">{format(new Date(o.last_order_date), "dd MMM yyyy")}</span>
+                      </div>
+                    ) : "—"}
                   </TableCell>
                   <TableCell className="text-right">
                     {w && w.balance > 0 ? (
