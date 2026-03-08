@@ -58,12 +58,17 @@ const UsersPage = () => {
   const { isSuperAdmin } = usePermissions();
   const { toast } = useToast();
 
+  const [orderSummaries, setOrderSummaries] = useState<Map<string, { user_id: string; order_count: number; total_spent: number; last_order_date: string | null }>>(new Map());
+  const [walletSummaries, setWalletSummaries] = useState<Map<string, { user_id: string; balance: number }>>(new Map());
+
   const fetchData = async () => {
-    const [usersRes, rolesRes, localBodiesRes, districtsRes] = await Promise.all([
+    const [usersRes, rolesRes, localBodiesRes, districtsRes, ordersRes, walletsRes] = await Promise.all([
       supabase.from("profiles").select("*"),
       supabase.from("roles").select("*"),
       supabase.from("locations_local_bodies").select("id, name, body_type, district_id"),
       supabase.from("locations_districts").select("id, name"),
+      supabase.from("orders").select("user_id, total, status, created_at"),
+      supabase.from("customer_wallets").select("customer_user_id, balance"),
     ]);
 
     const localBodies = (localBodiesRes.data ?? []) as LocalBody[];
@@ -84,6 +89,33 @@ const UsersPage = () => {
       }
       return u;
     });
+
+    // Build order summaries per user
+    const oMap = new Map<string, { user_id: string; order_count: number; total_spent: number; last_order_date: string | null }>();
+    (ordersRes.data ?? []).forEach((o: any) => {
+      if (!o.user_id) return;
+      const existing = oMap.get(o.user_id);
+      if (existing) {
+        existing.order_count++;
+        if (o.status === "delivered") existing.total_spent += Number(o.total ?? 0);
+        if (!existing.last_order_date || o.created_at > existing.last_order_date) existing.last_order_date = o.created_at;
+      } else {
+        oMap.set(o.user_id, {
+          user_id: o.user_id,
+          order_count: 1,
+          total_spent: o.status === "delivered" ? Number(o.total ?? 0) : 0,
+          last_order_date: o.created_at,
+        });
+      }
+    });
+    setOrderSummaries(oMap);
+
+    // Build wallet summaries
+    const wMap = new Map<string, { user_id: string; balance: number }>();
+    (walletsRes.data ?? []).forEach((w: any) => {
+      wMap.set(w.customer_user_id, { user_id: w.customer_user_id, balance: Number(w.balance ?? 0) });
+    });
+    setWalletSummaries(wMap);
 
     setUsers(enrichedUsers);
     setRoles((rolesRes.data as Role[]) ?? []);
