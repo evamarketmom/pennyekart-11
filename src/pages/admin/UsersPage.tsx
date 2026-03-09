@@ -77,20 +77,29 @@ const UsersPage = () => {
     const localBodies = (localBodiesRes.data ?? []) as LocalBody[];
     const districts = (districtsRes.data ?? []) as District[];
 
-    const enrichedUsers = ((usersRes.data ?? []) as unknown as Profile[]).map((u) => {
+    const allProfiles = (usersRes.data ?? []) as unknown as Profile[];
+    
+    // Build a map of profile id -> full_name for referrer lookups
+    const profileIdToName = new Map<string, string>();
+    allProfiles.forEach((p) => {
+      if (p.id && p.full_name) profileIdToName.set(p.id, p.full_name);
+    });
+
+    const enrichedUsers = allProfiles.map((u) => {
+      const enriched: any = { ...u };
       if (u.local_body_id) {
         const lb = localBodies.find((l) => l.id === u.local_body_id);
         if (lb) {
           const dist = districts.find((d) => d.id === lb.district_id);
-          return {
-            ...u,
-            local_body_name: lb.name,
-            local_body_type: lb.body_type,
-            district_name: dist?.name ?? null,
-          };
+          enriched.local_body_name = lb.name;
+          enriched.local_body_type = lb.body_type;
+          enriched.district_name = dist?.name ?? null;
         }
       }
-      return u;
+      if ((u as any).referred_by) {
+        enriched.referrer_name = profileIdToName.get((u as any).referred_by) || null;
+      }
+      return enriched;
     });
 
     // Build order summaries per user

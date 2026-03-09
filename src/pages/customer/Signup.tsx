@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate, Link, useLocation } from "react-router-dom";
+import { useNavigate, Link, useLocation, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,8 @@ const CUSTOMER_PASSWORD = "pennyekart_customer_2024";
 
 const CustomerSignup = () => {
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const referralCode = searchParams.get("ref") || "";
   const [fullName, setFullName] = useState("");
   const [mobile, setMobile] = useState((location.state as any)?.mobile || "");
   const [districtId, setDistrictId] = useState("");
@@ -96,6 +98,17 @@ const CustomerSignup = () => {
     setLoading(true);
 
     try {
+      // Resolve referral code to profile id
+      let referredByProfileId: string | null = null;
+      if (referralCode) {
+        const { data: referrerProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("referral_code", referralCode)
+          .maybeSingle();
+        if (referrerProfile) referredByProfileId = referrerProfile.id;
+      }
+
       const email = `${mobile}@pennyekart.in`;
       const { error } = await supabase.auth.signUp({
         email,
@@ -107,6 +120,7 @@ const CustomerSignup = () => {
             user_type: "customer",
             local_body_id: localBodyId,
             ward_number: parseInt(wardNumber),
+            referred_by: referredByProfileId,
           },
         },
       });

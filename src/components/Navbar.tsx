@@ -1,9 +1,10 @@
 import logo from "@/assets/logo.png";
-import { ShoppingCart, Menu, X, User, LogOut, Package, MapPin, Heart, Bell, ChevronDown, Wallet } from "lucide-react";
+import { ShoppingCart, Menu, X, User, LogOut, Package, MapPin, Heart, Bell, ChevronDown, Wallet, UserPlus } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import InviteFriendDialog from "@/components/InviteFriendDialog";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
@@ -37,12 +38,15 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const [inviteOpen, setInviteOpen] = useState(false);
+
   const menuItems = [
     { icon: User, label: "My Profile", action: () => navigate("/customer/profile") },
     { icon: Package, label: "Orders", action: () => navigate("/customer/profile") },
     { icon: MapPin, label: "Saved Addresses", action: () => navigate("/customer/profile") },
     { icon: Heart, label: "Wishlist", action: () => navigate("/customer/profile") },
     { icon: Bell, label: "Notifications", action: () => navigate("/customer/profile") },
+    { icon: UserPlus, label: "Invite a Friend", action: () => setInviteOpen(true) },
   ];
 
   return (
@@ -154,6 +158,7 @@ const Navbar = () => {
           </ul>
         </div>
       )}
+      <InviteFriendDialog open={inviteOpen} onOpenChange={setInviteOpen} />
     </nav>
   );
 };

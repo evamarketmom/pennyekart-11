@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
-import { Wallet, ArrowUpCircle, ArrowDownCircle, Settings, RefreshCw, Gift, ShoppingCart, Moon, CreditCard, Search, Eye, ShieldCheck } from "lucide-react";
+import { Wallet, ArrowUpCircle, ArrowDownCircle, Settings, RefreshCw, Gift, ShoppingCart, Moon, CreditCard, Search, Eye, ShieldCheck, UserPlus } from "lucide-react";
 
 interface WalletRow {
   id: string;
@@ -95,6 +95,14 @@ const RULE_DEFINITIONS = [
     icon: <CreditCard className="h-5 w-5 text-red-600" />,
     enabledKey: "wallet_rule_max_redeem_enabled",
     amountKey: "wallet_rule_max_redeem_amount",
+  },
+  {
+    key: "referral_bonus",
+    label: "Invite Friend Referral Bonus",
+    description: "Reward customers with wallet points when someone signs up using their referral link.",
+    icon: <UserPlus className="h-5 w-5 text-pink-600" />,
+    enabledKey: "wallet_rule_referral_enabled",
+    amountKey: "wallet_rule_referral_amount",
   },
 ];
 

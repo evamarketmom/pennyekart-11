@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, MapPin, ShoppingCart, Wallet, TrendingUp, CalendarDays, UserCheck, UserX, Activity, Download, Clock, Zap, Search, Phone, Ban, CheckCircle } from "lucide-react";
+import { Users, MapPin, ShoppingCart, Wallet, TrendingUp, CalendarDays, UserCheck, UserX, Activity, Download, Clock, Zap, Search, Phone, Ban, CheckCircle, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -25,6 +25,8 @@ interface Profile {
   created_at?: string;
   last_login_at?: string | null;
   is_blocked?: boolean;
+  referred_by?: string | null;
+  referrer_name?: string | null;
 }
 
 interface OrderSummary {
@@ -619,6 +621,12 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries, onRefresh }:
                     <div className="flex items-center gap-1.5">
                       {c.is_blocked && <Ban className="h-3.5 w-3.5 text-destructive" />}
                       {c.full_name ?? "—"}
+                      {c.referred_by && (
+                        <Badge className="text-[9px] px-1.5 py-0 bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400 border-0 gap-0.5">
+                          <UserPlus className="h-2.5 w-2.5" />
+                          {c.referrer_name ? `c/o ${c.referrer_name}` : "Referred"}
+                        </Badge>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>{c.mobile_number ?? "—"}</TableCell>
