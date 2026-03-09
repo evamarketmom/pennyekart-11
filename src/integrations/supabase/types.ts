@@ -1035,6 +1035,8 @@ export type Database = {
           last_login_at: string | null
           local_body_id: string | null
           mobile_number: string | null
+          referral_code: string | null
+          referred_by: string | null
           role_id: string | null
           updated_at: string
           user_id: string
@@ -1066,6 +1068,8 @@ export type Database = {
           last_login_at?: string | null
           local_body_id?: string | null
           mobile_number?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
           role_id?: string | null
           updated_at?: string
           user_id: string
@@ -1097,6 +1101,8 @@ export type Database = {
           last_login_at?: string | null
           local_body_id?: string | null
           mobile_number?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
           role_id?: string | null
           updated_at?: string
           user_id?: string
@@ -1109,6 +1115,13 @@ export type Database = {
             columns: ["local_body_id"]
             isOneToOne: false
             referencedRelation: "locations_local_bodies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_referred_by_fkey"
+            columns: ["referred_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
