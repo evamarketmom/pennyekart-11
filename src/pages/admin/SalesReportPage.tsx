@@ -158,17 +158,8 @@ const SalesReportPage = () => {
   }, [filterLocalBody, localBodyMap]);
 
   // Get godown IDs for location filters
-  const godownIdsForLocation = useMemo(() => {
-    if (filterLocalBody !== "all" && filterWard !== "all") {
-      // Include godowns assigned to this specific ward AND godowns assigned to the entire local body
-      const fromWards = godownWards
-        .filter(gw => gw.local_body_id === filterLocalBody && gw.ward_number === Number(filterWard))
-        .map(gw => gw.godown_id);
-      const fromLB = godownLocalBodies
-        .filter(glb => glb.local_body_id === filterLocalBody)
-        .map(glb => glb.godown_id);
-      return [...new Set([...fromWards, ...fromLB])];
-    }
+  // Godown IDs assigned to the selected local body (all wards)
+  const godownIdsForLocalBody = useMemo(() => {
     if (filterLocalBody !== "all") {
       const fromWards = godownWards.filter(gw => gw.local_body_id === filterLocalBody).map(gw => gw.godown_id);
       const fromLB = godownLocalBodies.filter(glb => glb.local_body_id === filterLocalBody).map(glb => glb.godown_id);
@@ -181,7 +172,11 @@ const SalesReportPage = () => {
       return [...new Set([...fromWards, ...fromLB])];
     }
     return null;
-  }, [filterDistrict, filterLocalBody, filterWard, godownWards, godownLocalBodies, localBodies]);
+  }, [filterDistrict, filterLocalBody, godownWards, godownLocalBodies, localBodies]);
+
+  const godownIdsForLocation = useMemo(() => {
+    return godownIdsForLocalBody;
+  }, [godownIdsForLocalBody]);
 
   const filteredOrders = useMemo(() => {
     return orders.filter(o => {
@@ -207,30 +202,28 @@ const SalesReportPage = () => {
       if (godownIdsForLocation !== null) {
         const profile = o.user_id ? profileMap[o.user_id] : null;
 
-        // Check if order's godown matches location
-        const matchesGodown = o.godown_id && godownIdsForLocation.includes(o.godown_id);
-
-        // Check if seller's assigned godown matches location
-        const matchesSellerGodown = o.seller_id && sellerGodownMap[o.seller_id]?.some(gId => godownIdsForLocation.includes(gId));
-
-        // Check if customer's profile location matches
-        let matchesCustomerLocation = false;
-        if (profile) {
-          if (filterLocalBody !== "all") {
-            if (profile.local_body_id === filterLocalBody) {
-              if (filterWard !== "all") {
-                matchesCustomerLocation = profile.ward_number === Number(filterWard);
-              } else {
-                matchesCustomerLocation = true;
-              }
+        // When ward filter is active, primarily match by customer profile ward
+        if (filterLocalBody !== "all" && filterWard !== "all") {
+          // Customer must be in this exact local body + ward
+          const customerInWard = profile && profile.local_body_id === filterLocalBody && profile.ward_number === Number(filterWard);
+          if (!customerInWard) return false;
+        } else {
+          // Check if order's godown matches location
+          const matchesGodown = o.godown_id && godownIdsForLocation.includes(o.godown_id);
+          // Check if seller's assigned godown matches location
+          const matchesSellerGodown = o.seller_id && sellerGodownMap[o.seller_id]?.some(gId => godownIdsForLocation.includes(gId));
+          // Check if customer's profile location matches
+          let matchesCustomerLocation = false;
+          if (profile) {
+            if (filterLocalBody !== "all") {
+              matchesCustomerLocation = profile.local_body_id === filterLocalBody;
+            } else if (filterDistrict !== "all") {
+              const lb = profile.local_body_id ? localBodyMap[profile.local_body_id] : null;
+              matchesCustomerLocation = lb?.district_id === filterDistrict;
             }
-          } else if (filterDistrict !== "all") {
-            const lb = profile.local_body_id ? localBodyMap[profile.local_body_id] : null;
-            matchesCustomerLocation = lb?.district_id === filterDistrict;
           }
+          if (!matchesGodown && !matchesSellerGodown && !matchesCustomerLocation) return false;
         }
-
-        if (!matchesGodown && !matchesSellerGodown && !matchesCustomerLocation) return false;
       }
 
       return true;
