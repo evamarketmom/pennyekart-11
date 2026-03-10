@@ -669,6 +669,18 @@ const ProductsPage = () => {
               <div className="flex items-center gap-2"><Switch checked={sellerForm.is_featured} onCheckedChange={(v) => setSellerForm({ ...sellerForm, is_featured: v })} /><Label>Featured</Label></div>
               <div className="flex items-center gap-2"><Switch checked={sellerForm.coming_soon} onCheckedChange={(v) => setSellerForm({ ...sellerForm, coming_soon: v })} /><Label>Coming Soon</Label></div>
             </div>
+            {sellerForm.is_featured && (
+              <div className="rounded-lg border border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-900/20 p-3 space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2"><Star className="h-4 w-4 text-yellow-500" /> Featured Extra Discount</Label>
+                <div className="flex gap-2">
+                  <select className="flex h-9 rounded-md border border-input bg-background px-2 py-1 text-sm w-32" value={sellerForm.featured_discount_type} onChange={e => setSellerForm({ ...sellerForm, featured_discount_type: e.target.value })}>
+                    <option value="amount">₹ Amount</option>
+                    <option value="percentage">% Percentage</option>
+                  </select>
+                  <Input type="number" min="0" step="0.01" placeholder="Discount value" value={sellerForm.featured_discount_value} onChange={e => setSellerForm({ ...sellerForm, featured_discount_value: +e.target.value })} className="flex-1" />
+                </div>
+              </div>
+            )}
             <div><Label>Wallet Points (earned by customer)</Label><Input type="number" value={sellerForm.wallet_points} onChange={(e) => setSellerForm({ ...sellerForm, wallet_points: +e.target.value })} placeholder="0" /></div>
             <Button className="w-full" onClick={handleSellerSave}>Save Changes</Button>
           </div>
