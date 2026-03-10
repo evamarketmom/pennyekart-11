@@ -249,7 +249,9 @@ const ProductsPage = () => {
       purchase_rate: p.purchase_rate, mrp: p.mrp, discount_rate: p.discount_rate, 
       video_url: (p as any).video_url ?? "", coming_soon: (p as any).coming_soon ?? false, 
       wallet_points: (p as any).wallet_points ?? 0,
-      margin_percentage: p.margin_percentage ?? null
+      margin_percentage: p.margin_percentage ?? null,
+      featured_discount_type: (p as any).featured_discount_type ?? "amount",
+      featured_discount_value: (p as any).featured_discount_value ?? 0,
     });
     setEditId(p.id); setOpen(true);
   };
