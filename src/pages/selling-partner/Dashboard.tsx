@@ -311,19 +311,35 @@ const SellingPartnerDashboard = () => {
     init();
   }, [user, profile]);
 
+  // Get category margin for auto-price calculation
+  const getCategoryMargin = (catName: string) => {
+    const cat = categories.find(c => c.name === catName);
+    return (cat as any)?.margin_percentage ?? 0;
+  };
+
+  const calcPriceFromMargin = (purchaseRate: number, mrp: number, categoryName: string) => {
+    const margin = getCategoryMargin(categoryName);
+    const price = purchaseRate > 0 && margin > 0
+      ? Math.round(purchaseRate * (1 + margin / 100) * 100) / 100
+      : mrp;
+    const discount = Math.max(0, mrp - price);
+    return { price, discount };
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     const mrp = parseFloat(form.mrp) || 0;
-    const discountRate = parseFloat(form.discount_rate) || 0;
+    const purchaseRate = parseFloat(form.purchase_rate) || 0;
+    const { price, discount } = calcPriceFromMargin(purchaseRate, mrp, form.category);
     const godownId = form.area_godown_id || (assignedGodowns.length === 1 ? assignedGodowns[0].id : null);
     const { error } = await supabase.from("seller_products").insert({
       seller_id: user.id,
       name: form.name.trim(),
       description: form.description.trim() || null,
-      price: mrp - discountRate,
-      purchase_rate: parseFloat(form.purchase_rate) || 0,
-      mrp, discount_rate: discountRate,
+      price,
+      purchase_rate: purchaseRate,
+      mrp, discount_rate: discount,
       category: form.category.trim() || null,
       stock: parseInt(form.stock) || 0,
       area_godown_id: godownId,
