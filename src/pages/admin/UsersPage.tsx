@@ -139,7 +139,23 @@ const UsersPage = () => {
 
   useEffect(() => { fetchData(); }, []);
 
-  const filteredUsers = filterType === "all" ? users : users.filter(u => u.user_type === filterType);
+  const filteredUsers = useMemo(() => {
+    let result = filterType === "all" ? users : users.filter(u => u.user_type === filterType);
+    if (filterRole !== "all") {
+      result = filterRole === "none"
+        ? result.filter(u => !u.role_id)
+        : result.filter(u => u.role_id === filterRole);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(u =>
+        (u.full_name?.toLowerCase().includes(q)) ||
+        (u.email?.toLowerCase().includes(q)) ||
+        (u.mobile_number?.includes(q))
+      );
+    }
+    return result;
+  }, [users, filterType, filterRole, searchQuery]);
   const isCustomerTab = filterType === "customer";
 
   const updateRole = async (userId: string, roleId: string) => {
