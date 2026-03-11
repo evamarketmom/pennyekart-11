@@ -67,7 +67,27 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries, onRefresh }:
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
   const [inactivePeriod, setInactivePeriod] = useState<InactivePeriod>("30");
   const [searchHistories, setSearchHistories] = useState<Map<string, SearchHistorySummary>>(new Map());
+  const [searchDetailOpen, setSearchDetailOpen] = useState(false);
+  const [searchDetailUser, setSearchDetailUser] = useState<{ userId: string; name: string } | null>(null);
+  const [searchDetailData, setSearchDetailData] = useState<{ query: string; result_count: number | null; created_at: string }[]>([]);
+  const [searchDetailLoading, setSearchDetailLoading] = useState(false);
   const { toast } = useToast();
+
+  const openSearchDetail = async (userId: string, name: string) => {
+    setSearchDetailUser({ userId, name });
+    setSearchDetailOpen(true);
+    setSearchDetailLoading(true);
+    const { data } = await supabase
+      .from("customer_search_history")
+      .select("search_query, result_count, created_at")
+      .eq("customer_user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    setSearchDetailData(
+      (data ?? []).map((d: any) => ({ query: d.search_query, result_count: d.result_count, created_at: d.created_at }))
+    );
+    setSearchDetailLoading(false);
+  };
 
   // Toggle customer block status
   const toggleBlock = async (userId: string, currentBlocked: boolean) => {
