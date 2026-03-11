@@ -811,6 +811,52 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries, onRefresh }:
           </TableBody>
         </Table>
       </div>
+
+      {/* Search History Detail Dialog */}
+      <Dialog open={searchDetailOpen} onOpenChange={setSearchDetailOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Search className="h-4 w-4" />
+              Search History — {searchDetailUser?.name}
+            </DialogTitle>
+          </DialogHeader>
+          {searchDetailLoading ? (
+            <div className="text-center py-8 text-muted-foreground text-sm">Loading...</div>
+          ) : searchDetailData.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground text-sm">No search history found</div>
+          ) : (
+            <ScrollArea className="max-h-[400px]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>#</TableHead>
+                    <TableHead>Search Query</TableHead>
+                    <TableHead className="text-center">Results</TableHead>
+                    <TableHead>Date & Time</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {searchDetailData.map((item, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell className="text-muted-foreground text-xs">{idx + 1}</TableCell>
+                      <TableCell className="font-medium text-sm">{item.query}</TableCell>
+                      <TableCell className="text-center">
+                        {item.result_count != null ? (
+                          <Badge variant="outline" className="text-[10px]">{item.result_count}</Badge>
+                        ) : "—"}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                        {format(new Date(item.created_at), "dd MMM yyyy, HH:mm")}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
