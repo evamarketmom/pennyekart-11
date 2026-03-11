@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -6,9 +6,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import CustomerList from "@/components/admin/CustomerList";
+import { Search } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -58,6 +60,8 @@ const UsersPage = () => {
   const [users, setUsers] = useState<Profile[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [filterType, setFilterType] = useState("all");
+  const [filterRole, setFilterRole] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const { isSuperAdmin } = usePermissions();
   const { toast } = useToast();
 
@@ -135,7 +139,23 @@ const UsersPage = () => {
 
   useEffect(() => { fetchData(); }, []);
 
-  const filteredUsers = filterType === "all" ? users : users.filter(u => u.user_type === filterType);
+  const filteredUsers = useMemo(() => {
+    let result = filterType === "all" ? users : users.filter(u => u.user_type === filterType);
+    if (filterRole !== "all") {
+      result = filterRole === "none"
+        ? result.filter(u => !u.role_id)
+        : result.filter(u => u.role_id === filterRole);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(u =>
+        (u.full_name?.toLowerCase().includes(q)) ||
+        (u.email?.toLowerCase().includes(q)) ||
+        (u.mobile_number?.includes(q))
+      );
+    }
+    return result;
+  }, [users, filterType, filterRole, searchQuery]);
   const isCustomerTab = filterType === "customer";
 
   const updateRole = async (userId: string, roleId: string) => {
@@ -183,6 +203,30 @@ const UsersPage = () => {
           ))}
         </TabsList>
       </Tabs>
+
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by name, email or mobile..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Select value={filterRole} onValueChange={setFilterRole}>
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue placeholder="Filter by role" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Roles</SelectItem>
+            <SelectItem value="none">No Role</SelectItem>
+            {roles.map((r) => (
+              <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {isCustomerTab ? (
         <CustomerList customers={filteredUsers} orderSummaries={orderSummaries} walletSummaries={walletSummaries} onRefresh={fetchData} />
