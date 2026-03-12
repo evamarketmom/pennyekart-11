@@ -69,6 +69,7 @@ const ReportsPage = () => {
   const [localBodies, setLocalBodies] = useState<LocalBody[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchHistory, setSearchHistory] = useState<{ search_query: string; result_count: number | null; created_at: string; customer_user_id: string }[]>([]);
 
   // ─── Filters ───────────────────────────────────────────────────────────────
   const [dateRange, setDateRange] = useState<string>("all");
