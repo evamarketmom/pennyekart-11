@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import CustomerList from "@/components/admin/CustomerList";
-import { Search } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -62,6 +63,8 @@ const UsersPage = () => {
   const [filterType, setFilterType] = useState("all");
   const [filterRole, setFilterRole] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const { isSuperAdmin } = usePermissions();
   const { toast } = useToast();
 
@@ -156,7 +159,13 @@ const UsersPage = () => {
     }
     return result;
   }, [users, filterType, filterRole, searchQuery]);
+
+  // Reset page when filters change
+  useMemo(() => { setCurrentPage(1); }, [filterType, filterRole, searchQuery]);
+
   const isCustomerTab = filterType === "customer";
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+  const paginatedUsers = filteredUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const updateRole = async (userId: string, roleId: string) => {
     const { error } = await supabase.from("profiles").update({ role_id: roleId === "none" ? null : roleId }).eq("user_id", userId);
@@ -231,64 +240,102 @@ const UsersPage = () => {
       {isCustomerTab ? (
         <CustomerList customers={filteredUsers} orderSummaries={orderSummaries} walletSummaries={walletSummaries} onRefresh={fetchData} />
       ) : (
-        <div className="admin-table-wrap">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email / Mobile</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Approved</TableHead>
-                <TableHead>Role</TableHead>
-                {isSuperAdmin && <TableHead>Super Admin</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.map((u) => (
-                <TableRow key={u.id}>
-                  <TableCell>{u.full_name ?? "—"}</TableCell>
-                  <TableCell>
-                    <div>{u.email ?? "—"}</div>
-                    {u.mobile_number && <div className="text-xs text-muted-foreground">{u.mobile_number}</div>}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getTypeBadgeVariant(u.user_type)}>
-                      {USER_TYPE_LABELS[u.user_type] ?? u.user_type}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Switch checked={u.is_approved} onCheckedChange={() => toggleApproval(u.user_id, u.is_approved)} />
-                  </TableCell>
-                  <TableCell>
-                    {isSuperAdmin ? (
-                      <Select value={u.role_id ?? "none"} onValueChange={(v) => updateRole(u.user_id, v)}>
-                        <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">No role</SelectItem>
-                          {roles.map((r) => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Badge variant="secondary">{roles.find((r) => r.id === u.role_id)?.name ?? "No role"}</Badge>
-                    )}
-                  </TableCell>
-                  {isSuperAdmin && (
-                    <TableCell>
-                      <Switch checked={u.is_super_admin} onCheckedChange={() => toggleSuperAdmin(u.user_id, u.is_super_admin)} />
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-              {filteredUsers.length === 0 && (
+        <>
+          <div className="admin-table-wrap">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={otherColSpan} className="text-center text-muted-foreground py-8">
-                    No users found
-                  </TableCell>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email / Mobile</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Approved</TableHead>
+                  <TableHead>Role</TableHead>
+                  {isSuperAdmin && <TableHead>Super Admin</TableHead>}
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {paginatedUsers.map((u) => (
+                  <TableRow key={u.id}>
+                    <TableCell>{u.full_name ?? "—"}</TableCell>
+                    <TableCell>
+                      <div>{u.email ?? "—"}</div>
+                      {u.mobile_number && <div className="text-xs text-muted-foreground">{u.mobile_number}</div>}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getTypeBadgeVariant(u.user_type)}>
+                        {USER_TYPE_LABELS[u.user_type] ?? u.user_type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Switch checked={u.is_approved} onCheckedChange={() => toggleApproval(u.user_id, u.is_approved)} />
+                    </TableCell>
+                    <TableCell>
+                      {isSuperAdmin ? (
+                        <Select value={u.role_id ?? "none"} onValueChange={(v) => updateRole(u.user_id, v)}>
+                          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">No role</SelectItem>
+                            {roles.map((r) => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Badge variant="secondary">{roles.find((r) => r.id === u.role_id)?.name ?? "No role"}</Badge>
+                      )}
+                    </TableCell>
+                    {isSuperAdmin && (
+                      <TableCell>
+                        <Switch checked={u.is_super_admin} onCheckedChange={() => toggleSuperAdmin(u.user_id, u.is_super_admin)} />
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+                {filteredUsers.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={otherColSpan} className="text-center text-muted-foreground py-8">
+                      No users found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination */}
+          {filteredUsers.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>Show</span>
+                <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setCurrentPage(1); }}>
+                  <SelectTrigger className="w-20 h-8"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[10, 25, 50, 100].map((s) => <SelectItem key={s} value={String(s)}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <span>of {filteredUsers.length} users</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                  let page: number;
+                  if (totalPages <= 5) page = i + 1;
+                  else if (currentPage <= 3) page = i + 1;
+                  else if (currentPage >= totalPages - 2) page = totalPages - 4 + i;
+                  else page = currentPage - 2 + i;
+                  return (
+                    <Button key={page} variant={currentPage === page ? "default" : "outline"} size="sm" className="w-8 h-8 p-0" onClick={() => setCurrentPage(page)}>
+                      {page}
+                    </Button>
+                  );
+                })}
+                <Button variant="outline" size="sm" disabled={currentPage === totalPages} onClick={() => setCurrentPage(currentPage + 1)}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </AdminLayout>
   );
