@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Users, MapPin, ShoppingCart, Wallet, TrendingUp, CalendarDays, UserCheck, UserX, Activity, Download, Clock, Zap, Search, Phone, Ban, CheckCircle, UserPlus, Eye } from "lucide-react";
+import { Users, MapPin, ShoppingCart, Wallet, TrendingUp, CalendarDays, UserCheck, UserX, Activity, Download, Clock, Zap, Search, Phone, Ban, CheckCircle, UserPlus, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
