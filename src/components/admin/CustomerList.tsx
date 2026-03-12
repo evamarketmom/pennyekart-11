@@ -233,6 +233,12 @@ const CustomerList = ({ customers, orderSummaries, walletSummaries, onRefresh }:
     return result;
   }, [customers, filterPanchayath, filterWard, sortBy, activityFilter, inactivePeriod, orderSummaries, walletSummaries, mobileSearch]);
 
+  // Reset page on filter change
+  useMemo(() => { setCurrentPage(1); }, [filterPanchayath, filterWard, sortBy, activityFilter, mobileSearch]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginatedCustomers = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   // Activity counts (respecting location filters)
   const activityCounts = useMemo(() => {
     const locationFiltered = customers.filter((c) => {
