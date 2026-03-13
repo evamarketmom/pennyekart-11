@@ -129,7 +129,7 @@ const FlashSaleDetail = () => {
         } else if (item.seller_product_id) {
           const { data: p } = await supabase
             .from("seller_products")
-            .select("name, image_url, description")
+            .select("name, image_url, description, category")
             .eq("id", item.seller_product_id)
             .single();
           if (p) {
