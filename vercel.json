@@ -1,5 +1,25 @@
 {
   "rewrites": [
+    {
+      "source": "/supabase/rest/:path*",
+      "destination": "https://xxlocaexuoowxdzupjcs.supabase.co/rest/:path*"
+    },
+    {
+      "source": "/supabase/auth/:path*",
+      "destination": "https://xxlocaexuoowxdzupjcs.supabase.co/auth/:path*"
+    },
+    {
+      "source": "/supabase/storage/:path*",
+      "destination": "https://xxlocaexuoowxdzupjcs.supabase.co/storage/:path*"
+    },
+    {
+      "source": "/supabase/functions/:path*",
+      "destination": "https://xxlocaexuoowxdzupjcs.supabase.co/functions/:path*"
+    },
+    {
+      "source": "/supabase/realtime/:path*",
+      "destination": "https://xxlocaexuoowxdzupjcs.supabase.co/realtime/:path*"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
