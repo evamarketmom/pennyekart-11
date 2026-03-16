@@ -2,8 +2,15 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://xxlocaexuoowxdzupjcs.supabase.co";
+const SUPABASE_DIRECT_URL = "https://xxlocaexuoowxdzupjcs.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4bG9jYWV4dW9vd3hkenVwamNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwNDk4ODQsImV4cCI6MjA4NjYyNTg4NH0.O37LZxDIvXadXEAgeuQotmO3Pqh0cWKCM5h05WmAOwE";
+
+// Use proxy URL in production (Vercel) to bypass ISP blocks in India
+// In development/preview, use direct Supabase URL
+const isProduction = typeof window !== 'undefined' && 
+  window.location.hostname !== 'localhost' && 
+  !window.location.hostname.includes('lovable.app');
+const SUPABASE_URL = isProduction ? `${window.location.origin}/supabase` : SUPABASE_DIRECT_URL;
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
