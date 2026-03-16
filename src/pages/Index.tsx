@@ -11,6 +11,7 @@ import FlashSaleBanner from "@/components/FlashSaleBanner";
 import Footer from "@/components/Footer";
 import CartReminderBanner from "@/components/CartReminderBanner";
 import WalletRewardPopup from "@/components/WalletRewardPopup";
+import OfferFlashPopup from "@/components/OfferFlashPopup";
 import SortFilterBar, { SortOption } from "@/components/SortFilterBar";
 import { useAuth } from "@/hooks/useAuth";
 import { useAreaProducts } from "@/hooks/useAreaProducts";
