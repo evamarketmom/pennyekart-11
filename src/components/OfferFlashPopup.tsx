@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { X, ChevronLeft, ChevronRight, Gift } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -14,6 +13,12 @@ interface FlashScreenItem {
   sort_order: number;
 }
 
+interface PopupSettings {
+  open_trigger: string;
+  open_delay_seconds: number;
+  auto_disappear_seconds: number;
+}
+
 const fetchFlashScreens = async (): Promise<FlashScreenItem[]> => {
   const { data } = await supabase
     .from("offer_flash_screens" as any)
@@ -23,10 +28,26 @@ const fetchFlashScreens = async (): Promise<FlashScreenItem[]> => {
   return (data as any as FlashScreenItem[]) ?? [];
 };
 
+const fetchPopupSettings = async (): Promise<PopupSettings> => {
+  const { data } = await supabase
+    .from("app_settings")
+    .select("key, value")
+    .in("key", ["flash_popup_open_trigger", "flash_popup_open_delay", "flash_popup_auto_disappear"]);
+  const map: Record<string, string> = {};
+  (data ?? []).forEach((r) => { if (r.value) map[r.key] = r.value; });
+  return {
+    open_trigger: map["flash_popup_open_trigger"] || "refresh",
+    open_delay_seconds: parseInt(map["flash_popup_open_delay"] || "2") || 2,
+    auto_disappear_seconds: parseInt(map["flash_popup_auto_disappear"] || "0"),
+  };
+};
+
 const OfferFlashPopup = () => {
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState(0);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const navigate = useNavigate();
+  const autoCloseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: screens = [] } = useQuery({
     queryKey: ["offer-flash-screens"],
@@ -35,13 +56,51 @@ const OfferFlashPopup = () => {
     gcTime: 10 * 60 * 1000,
   });
 
-  // Auto-show on mount when screens available
+  const { data: popupSettings } = useQuery({
+    queryKey: ["flash-popup-settings"],
+    queryFn: fetchPopupSettings,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Auto-show logic based on settings
   useEffect(() => {
-    if (screens.length > 0) {
-      const timer = setTimeout(() => setOpen(true), 1500);
+    if (screens.length === 0 || !popupSettings) return;
+
+    const delaySec = popupSettings.open_delay_seconds;
+
+    if (popupSettings.open_trigger === "countdown") {
+      // Show countdown first, then open
+      setCountdown(delaySec);
+    } else {
+      // refresh mode: just delay then open
+      const timer = setTimeout(() => setOpen(true), delaySec * 1000);
       return () => clearTimeout(timer);
     }
-  }, [screens.length]);
+  }, [screens.length, popupSettings]);
+
+  // Countdown ticker
+  useEffect(() => {
+    if (countdown === null || countdown <= 0) {
+      if (countdown === 0) {
+        setOpen(true);
+        setCountdown(null);
+      }
+      return;
+    }
+    const id = setTimeout(() => setCountdown((c) => (c !== null ? c - 1 : null)), 1000);
+    return () => clearTimeout(id);
+  }, [countdown]);
+
+  // Auto-disappear when popup opens
+  useEffect(() => {
+    if (!open || !popupSettings || popupSettings.auto_disappear_seconds <= 0) return;
+    autoCloseRef.current = setTimeout(() => {
+      setOpen(false);
+    }, popupSettings.auto_disappear_seconds * 1000);
+    return () => {
+      if (autoCloseRef.current) clearTimeout(autoCloseRef.current);
+    };
+  }, [open, popupSettings]);
 
   const handleClick = (linkUrl: string | null) => {
     if (linkUrl) {
@@ -61,8 +120,15 @@ const OfferFlashPopup = () => {
 
   return (
     <>
+      {/* Countdown overlay before popup opens */}
+      {countdown !== null && countdown > 0 && (
+        <div className="fixed bottom-20 right-3 z-50 md:bottom-6 md:right-6 bg-primary text-primary-foreground rounded-full h-12 w-12 flex items-center justify-center shadow-lg text-lg font-bold animate-pulse">
+          {countdown}
+        </div>
+      )}
+
       {/* Floating button to reopen */}
-      {!open && (
+      {!open && countdown === null && (
         <button
           onClick={() => { setCurrent(0); setOpen(true); }}
           className="fixed bottom-20 right-3 z-50 md:bottom-6 md:right-6 flex items-center justify-center h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg animate-bounce hover:animate-none transition-all"
@@ -82,6 +148,19 @@ const OfferFlashPopup = () => {
             >
               <X className="h-4 w-4" />
             </button>
+
+            {/* Auto-disappear progress bar */}
+            {popupSettings && popupSettings.auto_disappear_seconds > 0 && open && (
+              <div className="absolute top-0 left-0 right-0 z-10 h-1 rounded-t-xl overflow-hidden bg-black/20">
+                <div
+                  className="h-full bg-white/80 rounded-t-xl"
+                  style={{
+                    animation: `shrink ${popupSettings.auto_disappear_seconds}s linear forwards`,
+                  }}
+                />
+                <style>{`@keyframes shrink { from { width: 100%; } to { width: 0%; } }`}</style>
+              </div>
+            )}
 
             {/* Banner image */}
             {screen.image_url ? (
