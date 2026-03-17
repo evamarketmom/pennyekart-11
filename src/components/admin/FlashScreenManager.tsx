@@ -187,19 +187,21 @@ const FlashScreenManager = () => {
                 </p>
               </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs">Open delay (seconds)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={60}
-                  value={settings.open_delay_seconds}
-                  onChange={(e) => setSettings({ ...settings, open_delay_seconds: Math.max(0, parseInt(e.target.value) || 0) })}
-                />
-                <p className="text-[10px] text-muted-foreground">
-                  Wait this many seconds before showing the popup
-                </p>
-              </div>
+              {settings.open_trigger === "refresh" && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Open delay (seconds)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={60}
+                    value={settings.open_delay_seconds}
+                    onChange={(e) => setSettings({ ...settings, open_delay_seconds: Math.max(0, parseInt(e.target.value) || 0) })}
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    Wait this many seconds before showing the popup
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <Label className="text-xs">Auto disappear (seconds)</Label>
