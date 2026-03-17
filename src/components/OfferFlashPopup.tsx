@@ -135,7 +135,7 @@ const OfferFlashPopup = () => {
       {/* Floating button to reopen */}
       {!open && countdown === null && (
         <button
-          onClick={() => { setCurrent(0); setOpen(true); }}
+          onClick={() => { setCurrent(Math.floor(Math.random() * screens.length)); setOpen(true); }}
           className="fixed bottom-20 right-3 z-50 md:bottom-6 md:right-6 flex items-center justify-center h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg animate-bounce hover:animate-none transition-all"
           aria-label="View offers"
         >
