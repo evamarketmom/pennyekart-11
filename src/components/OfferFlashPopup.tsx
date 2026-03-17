@@ -118,7 +118,7 @@ const OfferFlashPopup = () => {
     }
   };
 
-  if (screens.length === 0) return null;
+  if (screens.length === 0 || current === -1) return null;
 
   const screen = screens[current];
   const hasMultiple = screens.length > 1;
