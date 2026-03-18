@@ -259,6 +259,8 @@ const ProductsPage = () => {
   };
 
   const openEdit = (p: Product) => {
+    // Detect if existing price looks rounded (integer) to default round_off_price
+    const isRounded = p.price === Math.round(p.price);
     setForm({ 
       name: p.name, description: p.description ?? "", price: p.price, category: p.category ?? "", 
       stock: p.stock, is_active: p.is_active, image_url: p.image_url ?? "", 
@@ -269,6 +271,7 @@ const ProductsPage = () => {
       margin_percentage: p.margin_percentage ?? null,
       featured_discount_type: (p as any).featured_discount_type ?? "amount",
       featured_discount_value: (p as any).featured_discount_value ?? 0,
+      round_off_price: isRounded,
     });
     setEditId(p.id); setOpen(true);
   };
