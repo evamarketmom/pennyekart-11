@@ -317,42 +317,47 @@ const Cart = () => {
           source: i.source || "product",
         }));
 
-      const calcTotal = (orderItems: typeof items) => {
-        const itemsTotal = orderItems.reduce((s, i) => s + i.price * i.quantity, 0);
-        // Distribute platform fee and discounts proportionally
-        const proportion = itemsTotal / totalPrice;
-        const proportionalCoupon = couponDiscount * proportion;
-        const proportionalWallet = walletDeduction * proportion;
-        // Platform fee only on the first order (micro), or split
-        return Math.max(0, itemsTotal - proportionalCoupon - proportionalWallet);
-      };
+      // Use finalAmount (the exact total shown to the user) and distribute proportionally across split orders
+      // This ensures saved order total always matches the displayed amount (selling price, not MRP)
+      const orderGroups: { items: typeof items; status: string; sellerId?: string | null; includeDelivery: boolean }[] = [];
+
+      if (microItems.length > 0) {
+        orderGroups.push({ items: microItems, status: "pending", includeDelivery: true });
+      }
+      for (const [sellerId, sellerItems] of sellerItemsBySeller) {
+        orderGroups.push({ items: sellerItems, status: "seller_confirmation_pending", sellerId: sellerId === "unknown" ? null : sellerId, includeDelivery: false });
+      }
 
       const ordersToInsert: any[] = [];
 
-      // Micro godown order (regular flow)
-      if (microItems.length > 0) {
-        const microTotal = calcTotal(microItems) + (sellerItemsBySeller.size > 0 ? platformFee / 2 : platformFee);
+      if (orderGroups.length === 1) {
+        // Single order: use finalAmount directly (matches what user sees)
+        const group = orderGroups[0];
         ordersToInsert.push({
           user_id: user!.id,
-          items: mapOrderItems(microItems),
-          total: microTotal + deliveryCharge,
-          delivery_charge: deliveryCharge,
-          status: "pending",
+          items: mapOrderItems(group.items),
+          total: finalAmount,
+          delivery_charge: group.includeDelivery ? deliveryCharge : 0,
+          status: group.status,
           shipping_address: deliveryAddress,
+          ...(group.sellerId ? { seller_id: group.sellerId } : {}),
         });
-      }
-
-      // Area godown orders (one per seller, starts with seller_confirmation_pending)
-      for (const [sellerId, sellerItems] of sellerItemsBySeller) {
-        const sellerTotal = calcTotal(sellerItems) + (microItems.length > 0 ? platformFee / 2 : platformFee) / sellerItemsBySeller.size;
-        ordersToInsert.push({
-          user_id: user!.id,
-          items: mapOrderItems(sellerItems),
-          total: sellerTotal,
-          status: "seller_confirmation_pending",
-          shipping_address: deliveryAddress,
-          seller_id: sellerId === "unknown" ? null : sellerId,
-        });
+      } else {
+        // Multiple orders: distribute finalAmount proportionally by selling price
+        for (const group of orderGroups) {
+          const groupItemsTotal = group.items.reduce((s, i) => s + i.price * i.quantity, 0);
+          const proportion = totalPrice > 0 ? groupItemsTotal / totalPrice : 0;
+          const groupTotal = Math.max(0, finalAmount * proportion) + (group.includeDelivery ? deliveryCharge : 0);
+          ordersToInsert.push({
+            user_id: user!.id,
+            items: mapOrderItems(group.items),
+            total: Math.round(groupTotal * 100) / 100,
+            delivery_charge: group.includeDelivery ? deliveryCharge : 0,
+            status: group.status,
+            shipping_address: deliveryAddress,
+            ...(group.sellerId ? { seller_id: group.sellerId } : {}),
+          });
+        }
       }
 
       // Insert all orders and capture first order id
