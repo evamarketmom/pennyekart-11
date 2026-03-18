@@ -61,7 +61,7 @@ const sectionOptions = [
   { value: "sponsors", label: "Sponsors" },
 ];
 
-const emptyProduct = { name: "", description: "", price: 0, category: "", stock: 0, is_active: true, image_url: "", image_url_2: "", image_url_3: "", section: "", purchase_rate: 0, mrp: 0, discount_rate: 0, video_url: "", coming_soon: false, wallet_points: 0, margin_percentage: null as number | null, featured_discount_type: "amount", featured_discount_value: 0, round_off_price: true };
+const emptyProduct = { name: "", description: "", price: 0, category: "", stock: 0, is_active: true, image_url: "", image_url_2: "", image_url_3: "", section: "", purchase_rate: 0, mrp: 0, discount_rate: 0, video_url: "", coming_soon: false, wallet_points: 0, margin_percentage: null as number | null, featured_discount_type: "amount", featured_discount_value: 0, round_off_price: true, manual_round_off: 0 };
 
 const ProductsPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
