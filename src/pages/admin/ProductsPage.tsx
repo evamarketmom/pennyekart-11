@@ -124,14 +124,14 @@ const ProductsPage = () => {
   // Handle purchase rate change - auto-calculate selling price
   const handlePurchaseRateChange = (purchaseRate: number, currentForm: typeof form, setFormFn: typeof setForm) => {
     const margin = currentForm.margin_percentage ?? getCategoryMargin(currentForm.category);
-    const newPrice = calculateSellingPrice(purchaseRate, margin);
+    const newPrice = calculateSellingPrice(purchaseRate, margin, currentForm.round_off_price);
     const newDiscount = calculateDiscount(currentForm.mrp, newPrice);
     setFormFn({ ...currentForm, purchase_rate: purchaseRate, price: newPrice, discount_rate: newDiscount });
   };
 
   // Handle margin change - auto-calculate selling price
   const handleMarginChange = (marginPercentage: number, currentForm: typeof form, setFormFn: typeof setForm) => {
-    const newPrice = calculateSellingPrice(currentForm.purchase_rate, marginPercentage);
+    const newPrice = calculateSellingPrice(currentForm.purchase_rate, marginPercentage, currentForm.round_off_price);
     const newDiscount = calculateDiscount(currentForm.mrp, newPrice);
     setFormFn({ ...currentForm, margin_percentage: marginPercentage, price: newPrice, discount_rate: newDiscount });
   };
@@ -154,11 +154,23 @@ const ProductsPage = () => {
     setFormFn({ ...currentForm, discount_rate: discount, price: Math.max(0, newPrice) });
   };
 
+  // Handle round-off toggle - recalculate price immediately
+  const handleRoundOffToggle = (roundOff: boolean, currentForm: typeof form, setFormFn: typeof setForm) => {
+    const margin = currentForm.margin_percentage ?? getCategoryMargin(currentForm.category);
+    if (currentForm.purchase_rate > 0) {
+      const newPrice = calculateSellingPrice(currentForm.purchase_rate, margin, roundOff);
+      const newDiscount = calculateDiscount(currentForm.mrp, newPrice);
+      setFormFn({ ...currentForm, round_off_price: roundOff, price: newPrice, discount_rate: newDiscount });
+    } else {
+      setFormFn({ ...currentForm, round_off_price: roundOff });
+    }
+  };
+
   // Handle category change - apply category margin if no product-specific margin
   const handleCategoryChange = (categoryName: string, currentForm: typeof form, setFormFn: typeof setForm) => {
     const categoryMargin = getCategoryMargin(categoryName);
     const effectiveMargin = currentForm.margin_percentage ?? categoryMargin;
-    const newPrice = currentForm.purchase_rate > 0 ? calculateSellingPrice(currentForm.purchase_rate, effectiveMargin) : currentForm.price;
+    const newPrice = currentForm.purchase_rate > 0 ? calculateSellingPrice(currentForm.purchase_rate, effectiveMargin, currentForm.round_off_price) : currentForm.price;
     const newDiscount = calculateDiscount(currentForm.mrp, newPrice);
     setFormFn({ ...currentForm, category: categoryName, price: newPrice, discount_rate: newDiscount });
   };
