@@ -348,9 +348,15 @@ const ProductsPage = () => {
 
           {/* Pricing with Auto-Calculation */}
           <div className="rounded-lg border p-3 space-y-3">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Calculator className="h-4 w-4" />
-              Pricing (Auto-calculated)
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Calculator className="h-4 w-4" />
+                Pricing (Auto-calculated)
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Switch checked={form.round_off_price} onCheckedChange={(v) => handleRoundOffToggle(v, form, setForm)} className="scale-75" />
+                <Label className="text-xs text-muted-foreground cursor-pointer" onClick={() => handleRoundOffToggle(!form.round_off_price, form, setForm)}>Round off</Label>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
