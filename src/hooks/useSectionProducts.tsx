@@ -36,10 +36,12 @@ const fetchSectionProducts = async (): Promise<SectionProduct[]> => {
   // Fetch featured seller products
   const { data: sellerFeatured } = await supabase
     .from("seller_products")
-    .select("id, name, price, mrp, discount_rate, image_url, category, coming_soon, wallet_points")
+    .select("id, name, price, mrp, discount_rate, image_url, category, coming_soon, wallet_points, stock")
     .eq("is_active", true)
     .eq("is_approved", true)
     .eq("is_featured", true)
+    .eq("coming_soon", false)
+    .gt("stock", 0)
     .limit(20);
 
   const adminProducts = (sectionData ?? []) as SectionProduct[];
