@@ -125,7 +125,7 @@ const ProductsPage = () => {
   // Handle purchase rate change - auto-calculate selling price
   const handlePurchaseRateChange = (purchaseRate: number, currentForm: typeof form, setFormFn: typeof setForm) => {
     const margin = currentForm.margin_percentage ?? getCategoryMargin(currentForm.category);
-    const newPrice = calculateSellingPrice(purchaseRate, margin, currentForm.round_off_price);
+    const newPrice = calculateSellingPrice(purchaseRate, margin, currentForm.round_off_price, currentForm.manual_round_off);
     const newDiscount = calculateDiscount(currentForm.mrp, newPrice);
     setFormFn({ ...currentForm, purchase_rate: purchaseRate, price: newPrice, discount_rate: newDiscount });
   };
