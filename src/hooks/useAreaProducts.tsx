@@ -67,6 +67,7 @@ const fetchAreaProducts = async (localBodyId: string, wardNumber: number): Promi
       .select("id, name, price, mrp, discount_rate, image_url, description, category, section, stock, coming_soon, wallet_points")
       .in("id", productIds)
       .eq("is_active", true)
+      .eq("coming_soon", false)
       .limit(50);
     if (productData) allProducts.push(...(productData as AreaProduct[]));
   }
