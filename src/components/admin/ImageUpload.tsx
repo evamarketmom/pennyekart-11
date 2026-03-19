@@ -126,7 +126,7 @@ const ImageUpload = ({ bucket, value, onChange, label, useExternalStorage = true
         onChange(data.url, { provider: data.provider, status: data.status });
       } catch (err) {
         console.warn("External upload error, falling back:", err);
-        await fallbackToSupabase(file);
+      await fallbackToSupabase(optimizedFile);
       }
     } else {
       await fallbackToSupabase(file);
