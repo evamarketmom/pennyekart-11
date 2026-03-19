@@ -66,6 +66,7 @@ const emptyProduct = { name: "", description: "", price: 0, category: "", stock:
 const ProductsPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [sellerProducts, setSellerProducts] = useState<SellerProduct[]>([]);
+  const [sellerProfiles, setSellerProfiles] = useState<{ user_id: string; company_name: string | null; full_name: string | null }[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [form, setForm] = useState(emptyProduct);
   const [editId, setEditId] = useState<string | null>(null);
@@ -77,6 +78,7 @@ const ProductsPage = () => {
   const [sellerCategoryFilter, setSellerCategoryFilter] = useState("");
   const [ownSearch, setOwnSearch] = useState("");
   const [sellerSearch, setSellerSearch] = useState("");
+  const [sellerFilter, setSellerFilter] = useState("");
   const [detailProduct, setDetailProduct] = useState<(Product | SellerProduct) | null>(null);
   const [detailType, setDetailType] = useState<"own" | "seller">("own");
   const [detailSellerInfo, setDetailSellerInfo] = useState<{
@@ -108,6 +110,11 @@ const ProductsPage = () => {
     setSellerProducts((data as SellerProduct[]) ?? []);
   };
 
+  const fetchSellerProfiles = async () => {
+    const { data } = await supabase.from("profiles").select("user_id, company_name, full_name").eq("user_type", "selling_partner");
+    setSellerProfiles(data ?? []);
+  };
+
   const fetchCategories = async () => {
     const { data } = await supabase.from("categories").select("id, name, category_type, variation_type, margin_percentage").eq("is_active", true).order("sort_order");
     setCategories((data as Category[]) ?? []);
@@ -116,6 +123,7 @@ const ProductsPage = () => {
   useEffect(() => {
     fetchProducts();
     fetchSellerProducts();
+    fetchSellerProfiles();
     fetchCategories();
   }, []);
 
@@ -575,6 +583,10 @@ const ProductsPage = () => {
                 <option value="">All Categories</option>
                 {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
               </select>
+              <select className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm" value={sellerFilter} onChange={(e) => setSellerFilter(e.target.value)}>
+                <option value="">All Sellers</option>
+                {sellerProfiles.map(s => <option key={s.user_id} value={s.user_id}>{s.company_name || s.full_name || s.user_id.slice(0, 8)}</option>)}
+              </select>
               <p className="text-sm text-muted-foreground hidden sm:block">Approve to make visible to customers.</p>
             </div>
             <Button variant="outline" onClick={() => navigate("/selling-partner/dashboard")}>
@@ -598,7 +610,7 @@ const ProductsPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sellerProducts.filter(p => (!sellerCategoryFilter || p.category === sellerCategoryFilter) && (!sellerSearch || p.name.toLowerCase().includes(sellerSearch.toLowerCase()))).map((p) => (
+                {sellerProducts.filter(p => (!sellerCategoryFilter || p.category === sellerCategoryFilter) && (!sellerFilter || p.seller_id === sellerFilter) && (!sellerSearch || p.name.toLowerCase().includes(sellerSearch.toLowerCase()))).map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell>{p.category ?? "—"}</TableCell>
