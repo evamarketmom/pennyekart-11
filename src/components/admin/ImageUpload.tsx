@@ -121,7 +121,8 @@ const ImageUpload = ({ bucket, value, onChange, label, useExternalStorage = true
           return;
         }
 
-        setUploadMeta({ provider: data.provider, status: data.status });
+        const sizeKB = (optimizedFile.size / 1024).toFixed(0);
+        setUploadMeta({ provider: data.provider, status: data.status, size: `${sizeKB}KB` });
         onChange(data.url, { provider: data.provider, status: data.status });
       } catch (err) {
         console.warn("External upload error, falling back:", err);
