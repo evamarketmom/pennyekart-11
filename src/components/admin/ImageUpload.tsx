@@ -99,7 +99,7 @@ const ImageUpload = ({ bucket, value, onChange, label, useExternalStorage = true
         }
 
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append("file", optimizedFile);
 
         const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || "xxlocaexuoowxdzupjcs";
         const res = await fetch(
