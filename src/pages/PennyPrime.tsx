@@ -206,8 +206,11 @@ const PennyPrime = () => {
       c.customer_discount_type === "percent"
         ? `${c.customer_discount_value}% off`
         : `₹${c.customer_discount_value} off`;
-    const productLink = product?.id ? `${window.location.origin}/product/${product.id}?source=seller_product` : window.location.origin;
-    const msg = `🌟 *Penny Prime Deal!*\n\nProduct: ${product?.name ?? "Special Product"}\n💰 Discount: ${discountText}\n\nUse my exclusive code: *${shareCode}*\n\n🛒 Buy now: ${productLink}\n\nShop on Pennyekart and save big!`;
+    const productLink = product?.id
+      ? `${window.location.origin}/product/${product.id}?source=seller_product&coupon=${encodeURIComponent(shareCode)}`
+      : window.location.origin;
+    const imageLine = product?.image_url ? `\n📸 ${product.image_url}` : "";
+    const msg = `🌟 *Penny Prime Deal!*\n\nProduct: ${product?.name ?? "Special Product"}${imageLine}\n💰 Discount: ${discountText}\n\nUse my exclusive code: *${shareCode}*\n\n🛒 Buy now: ${productLink}\n\nShop on Pennyekart and save big!`;
     const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
   };
