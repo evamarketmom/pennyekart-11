@@ -610,7 +610,7 @@ const ProductsPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sellerProducts.filter(p => (!sellerCategoryFilter || p.category === sellerCategoryFilter) && (!sellerSearch || p.name.toLowerCase().includes(sellerSearch.toLowerCase()))).map((p) => (
+                {sellerProducts.filter(p => (!sellerCategoryFilter || p.category === sellerCategoryFilter) && (!sellerFilter || p.seller_id === sellerFilter) && (!sellerSearch || p.name.toLowerCase().includes(sellerSearch.toLowerCase()))).map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell>{p.category ?? "—"}</TableCell>
