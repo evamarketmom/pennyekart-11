@@ -46,6 +46,8 @@ const getYoutubeEmbedUrl = (url: string, autoplay = false) => {
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const couponFromUrl = searchParams.get("coupon") || "";
   const [product, setProduct] = useState<ProductData | null>(null);
   const [similarProducts, setSimilarProducts] = useState<ProductData[]>([]);
   const [loading, setLoading] = useState(true);
