@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Star, ArrowLeft, ChevronDown, ChevronUp, Play, Clock, Building2, MapPin, Phone, Mail, Share2, Coins } from "lucide-react";
+import { Star, ArrowLeft, ChevronDown, ChevronUp, Play, Clock, Building2, MapPin, Phone, Mail, Share2, Coins, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProductRow from "@/components/ProductRow";
 import { useCart } from "@/hooks/useCart";
