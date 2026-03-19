@@ -510,7 +510,7 @@ const ProductsPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {products.filter(p => !ownCategoryFilter || p.category === ownCategoryFilter).map((p) => (
+                {products.filter(p => (!ownCategoryFilter || p.category === ownCategoryFilter) && (!ownSearch || p.name.toLowerCase().includes(ownSearch.toLowerCase()))).map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell>₹{p.purchase_rate}</TableCell>
