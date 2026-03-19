@@ -333,7 +333,15 @@ const ProductDetail = () => {
         </button>
       </header>
 
-      <main>
+        {couponFromUrl && (
+          <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 px-4 py-2 text-sm">
+            <Tag className="h-4 w-4 text-primary shrink-0" />
+            <span className="text-foreground">
+              Coupon <strong className="font-mono text-primary">{couponFromUrl}</strong> will be auto-applied at checkout
+            </span>
+          </div>
+        )}
+
         {/* Auto-sliding Image/Video Gallery */}
         <div className="flex flex-col md:flex-row">
           <div className="relative w-full md:w-1/2">
