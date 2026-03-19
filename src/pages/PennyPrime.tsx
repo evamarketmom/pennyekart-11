@@ -207,7 +207,7 @@ const PennyPrime = () => {
         ? `${c.customer_discount_value}% off`
         : `₹${c.customer_discount_value} off`;
     const productLink = product?.id
-      ? `${window.location.origin}/product/${product.id}?source=seller_product&coupon=${encodeURIComponent(shareCode)}`
+      ? `https://xxlocaexuoowxdzupjcs.supabase.co/functions/v1/product-og?id=${product.id}&site_url=${encodeURIComponent(window.location.origin)}&coupon=${encodeURIComponent(shareCode)}`
       : window.location.origin;
     const priceLine = product && product.mrp > product.price
       ? `\n💲 MRP: ₹${product.mrp} → Now: ₹${product.price}`
