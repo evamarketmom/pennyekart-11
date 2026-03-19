@@ -319,11 +319,13 @@ const ProductDetail = () => {
         <h1 className="line-clamp-1 flex-1 text-sm font-semibold text-foreground">{product.name}</h1>
         <button
           onClick={() => {
-            const url = `${window.location.origin}/product/${product.id}${productSource === "seller_product" ? "?source=seller_product" : ""}`;
+            const ogUrl = `https://xxlocaexuoowxdzupjcs.supabase.co/functions/v1/product-og?id=${product.id}&site_url=${encodeURIComponent(window.location.origin)}`;
+            const fallbackUrl = `${window.location.origin}/product/${product.id}${productSource === "seller_product" ? "?source=seller_product" : ""}`;
+            const shareUrl = ogUrl;
             if (navigator.share) {
-              navigator.share({ title: product.name, text: `Check out ${product.name} on Pennyekart!`, url });
+              navigator.share({ title: product.name, text: `Check out ${product.name} on Pennyekart!`, url: shareUrl });
             } else {
-              navigator.clipboard.writeText(url);
+              navigator.clipboard.writeText(shareUrl);
               toast({ title: "Link copied!", description: "Product link copied to clipboard." });
             }
           }}
