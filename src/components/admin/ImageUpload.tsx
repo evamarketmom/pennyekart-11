@@ -181,6 +181,11 @@ const ImageUpload = ({ bucket, value, onChange, label, useExternalStorage = true
           {uploadMeta.status === "fallback" && (
             <Badge variant="secondary" className="text-[10px]">fallback</Badge>
           )}
+          {uploadMeta.size && (
+            <Badge variant="secondary" className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+              optimized: {uploadMeta.size}
+            </Badge>
+          )}
         </div>
       )}
       {value && (
