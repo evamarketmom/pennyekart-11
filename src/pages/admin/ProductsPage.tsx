@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
-import { Plus, Pencil, Trash2, ExternalLink, Clock, Store, CheckCircle, XCircle, Percent, Calculator, Star } from "lucide-react";
+import { Plus, Pencil, Trash2, ExternalLink, Clock, Store, CheckCircle, XCircle, Percent, Calculator, Star, Search } from "lucide-react";
 import ImageUpload from "@/components/admin/ImageUpload";
 import ProductVariants from "@/components/admin/ProductVariants";
 import { useNavigate } from "react-router-dom";
@@ -75,6 +75,8 @@ const ProductsPage = () => {
   const [sellerForm, setSellerForm] = useState({ name: "", description: "", price: 0, mrp: 0, purchase_rate: 0, discount_rate: 0, stock: 0, category: "", is_active: true, is_approved: false, is_featured: false, coming_soon: false, image_url: "", image_url_2: "", image_url_3: "", video_url: "", wallet_points: 0, margin_percentage: null as number | null, featured_discount_type: "amount", featured_discount_value: 0, round_off_price: true, manual_round_off: 0 });
   const [ownCategoryFilter, setOwnCategoryFilter] = useState("");
   const [sellerCategoryFilter, setSellerCategoryFilter] = useState("");
+  const [ownSearch, setOwnSearch] = useState("");
+  const [sellerSearch, setSellerSearch] = useState("");
   const { hasPermission } = usePermissions();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -479,11 +481,17 @@ const ProductsPage = () => {
 
         {/* OWN PRODUCTS TAB */}
         <TabsContent value="own">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <select className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm" value={ownCategoryFilter} onChange={(e) => setOwnCategoryFilter(e.target.value)}>
-              <option value="">All Categories</option>
-              {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-            </select>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Search products..." value={ownSearch} onChange={(e) => setOwnSearch(e.target.value)} className="pl-9 w-48 h-9" />
+              </div>
+              <select className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm" value={ownCategoryFilter} onChange={(e) => setOwnCategoryFilter(e.target.value)}>
+                <option value="">All Categories</option>
+                {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+              </select>
+            </div>
             <div>{hasPermission("create_products") && productDialog}</div>
           </div>
           <div className="admin-table-wrap">
@@ -502,7 +510,7 @@ const ProductsPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {products.filter(p => !ownCategoryFilter || p.category === ownCategoryFilter).map((p) => (
+                {products.filter(p => (!ownCategoryFilter || p.category === ownCategoryFilter) && (!ownSearch || p.name.toLowerCase().includes(ownSearch.toLowerCase()))).map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell>₹{p.purchase_rate}</TableCell>
@@ -543,8 +551,12 @@ const ProductsPage = () => {
 
         {/* SELLER PRODUCTS TAB */}
         <TabsContent value="sellers">
-          <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Search seller products..." value={sellerSearch} onChange={(e) => setSellerSearch(e.target.value)} className="pl-9 w-48 h-9" />
+              </div>
               <select className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm" value={sellerCategoryFilter} onChange={(e) => setSellerCategoryFilter(e.target.value)}>
                 <option value="">All Categories</option>
                 {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
@@ -572,7 +584,7 @@ const ProductsPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sellerProducts.filter(p => !sellerCategoryFilter || p.category === sellerCategoryFilter).map((p) => (
+                {sellerProducts.filter(p => (!sellerCategoryFilter || p.category === sellerCategoryFilter) && (!sellerSearch || p.name.toLowerCase().includes(sellerSearch.toLowerCase()))).map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell>{p.category ?? "—"}</TableCell>
