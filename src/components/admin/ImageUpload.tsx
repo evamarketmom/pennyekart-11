@@ -14,12 +14,52 @@ interface ImageUploadProps {
 }
 
 const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
+const TARGET_SIZE = 100 * 1024; // 100KB target
 const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
+const compressImage = (file: File, targetBytes: number): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = async () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement("canvas");
+      let { width, height } = img;
+
+      // Scale down if very large
+      const maxDim = 1200;
+      if (width > maxDim || height > maxDim) {
+        const ratio = Math.min(maxDim / width, maxDim / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Iteratively reduce quality to hit target
+      let quality = 0.8;
+      let blob: Blob | null = null;
+      for (let i = 0; i < 6; i++) {
+        blob = await new Promise<Blob | null>(r => canvas.toBlob(r, "image/webp", quality));
+        if (!blob || blob.size <= targetBytes) break;
+        quality -= 0.1;
+      }
+
+      if (!blob) return reject(new Error("Compression failed"));
+      const compressed = new File([blob], file.name.replace(/\.\w+$/, ".webp"), { type: "image/webp" });
+      resolve(compressed);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Failed to load image")); };
+    img.src = url;
+  });
+};
 
 const ImageUpload = ({ bucket, value, onChange, label, useExternalStorage = true }: ImageUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [uploadMeta, setUploadMeta] = useState<{ provider?: string; status?: string } | null>(null);
+  const [uploadMeta, setUploadMeta] = useState<{ provider?: string; status?: string; size?: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,7 +68,6 @@ const ImageUpload = ({ bucket, value, onChange, label, useExternalStorage = true
     setError(null);
     setUploadMeta(null);
 
-    // Client-side validation
     if (file.size > MAX_FILE_SIZE) {
       setError("File size exceeds 1MB limit");
       return;
@@ -39,6 +78,16 @@ const ImageUpload = ({ bucket, value, onChange, label, useExternalStorage = true
     }
 
     setUploading(true);
+
+    // Auto-compress to under 100KB
+    let optimizedFile = file;
+    try {
+      if (file.size > TARGET_SIZE) {
+        optimizedFile = await compressImage(file, TARGET_SIZE);
+      }
+    } catch {
+      console.warn("Compression failed, using original file");
+    }
 
     if (useExternalStorage) {
       try {
