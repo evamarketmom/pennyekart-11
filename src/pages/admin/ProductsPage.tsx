@@ -733,6 +733,35 @@ const ProductsPage = () => {
                   <a href={(detailProduct as any).video_url} target="_blank" rel="noopener noreferrer" className="text-primary underline">{(detailProduct as any).video_url}</a>
                 </div>
               )}
+
+              {/* Seller Company Details */}
+              {detailType === "seller" && detailSellerInfo && (
+                <div className="rounded-lg border p-3 space-y-2">
+                  <p className="text-sm font-medium flex items-center gap-2">
+                    <Store className="h-4 w-4 text-primary" /> Seller / Company Details
+                  </p>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    {detailSellerInfo.company_name && (
+                      <><span className="text-muted-foreground">Company:</span><span className="font-medium">{detailSellerInfo.company_name}</span></>
+                    )}
+                    {detailSellerInfo.full_name && (
+                      <><span className="text-muted-foreground">Contact Person:</span><span className="font-medium">{detailSellerInfo.full_name}</span></>
+                    )}
+                    {detailSellerInfo.gst_number && (
+                      <><span className="text-muted-foreground">GST Number:</span><span className="font-medium">{detailSellerInfo.gst_number}</span></>
+                    )}
+                    {detailSellerInfo.business_phone && (
+                      <><span className="text-muted-foreground">Phone:</span><span className="font-medium">{detailSellerInfo.business_phone}</span></>
+                    )}
+                    {detailSellerInfo.business_email && (
+                      <><span className="text-muted-foreground">Email:</span><span className="font-medium">{detailSellerInfo.business_email}</span></>
+                    )}
+                    {(detailSellerInfo.business_address || detailSellerInfo.business_city) && (
+                      <><span className="text-muted-foreground">Address:</span><span className="font-medium">{[detailSellerInfo.business_address, detailSellerInfo.business_city, detailSellerInfo.business_state, detailSellerInfo.business_pincode].filter(Boolean).join(", ")}</span></>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
