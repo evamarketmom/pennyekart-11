@@ -110,6 +110,11 @@ const ProductsPage = () => {
     setSellerProducts((data as SellerProduct[]) ?? []);
   };
 
+  const fetchSellerProfiles = async () => {
+    const { data } = await supabase.from("profiles").select("user_id, company_name, full_name").eq("user_type", "selling_partner");
+    setSellerProfiles(data ?? []);
+  };
+
   const fetchCategories = async () => {
     const { data } = await supabase.from("categories").select("id, name, category_type, variation_type, margin_percentage").eq("is_active", true).order("sort_order");
     setCategories((data as Category[]) ?? []);
@@ -118,6 +123,7 @@ const ProductsPage = () => {
   useEffect(() => {
     fetchProducts();
     fetchSellerProducts();
+    fetchSellerProfiles();
     fetchCategories();
   }, []);
 
