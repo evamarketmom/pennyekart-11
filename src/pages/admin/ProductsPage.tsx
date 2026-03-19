@@ -481,11 +481,17 @@ const ProductsPage = () => {
 
         {/* OWN PRODUCTS TAB */}
         <TabsContent value="own">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <select className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm" value={ownCategoryFilter} onChange={(e) => setOwnCategoryFilter(e.target.value)}>
-              <option value="">All Categories</option>
-              {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-            </select>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Search products..." value={ownSearch} onChange={(e) => setOwnSearch(e.target.value)} className="pl-9 w-48 h-9" />
+              </div>
+              <select className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm" value={ownCategoryFilter} onChange={(e) => setOwnCategoryFilter(e.target.value)}>
+                <option value="">All Categories</option>
+                {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+              </select>
+            </div>
             <div>{hasPermission("create_products") && productDialog}</div>
           </div>
           <div className="admin-table-wrap">
