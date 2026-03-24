@@ -636,6 +636,34 @@ const Cart = () => {
                   + Add delivery address
                 </button>
               )}
+              {/* Share Location via WhatsApp */}
+              <button
+                onClick={() => {
+                  if (!navigator.geolocation) {
+                    toast.error("Geolocation is not supported by your browser");
+                    return;
+                  }
+                  toast.info("Getting your location...");
+                  navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                      const { latitude, longitude } = position.coords;
+                      const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+                      const message = encodeURIComponent(
+                        `📍 My delivery location:\n${savedAddress || "Address not set"}\n\n📌 Google Maps: ${googleMapsLink}`
+                      );
+                      window.open(`https://wa.me/?text=${message}`, "_blank");
+                    },
+                    (error) => {
+                      toast.error("Unable to get location. Please enable location access.");
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                  );
+                }}
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-md border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm font-medium text-green-700 hover:bg-green-500/20 transition-colors dark:text-green-400"
+              >
+                <Share2 className="h-4 w-4" />
+                Share Location via WhatsApp
+              </button>
             </div>
 
             {/* Coupon Code */}
