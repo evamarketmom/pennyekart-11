@@ -717,8 +717,11 @@ export type Database = {
       }
       offer_flash_screens: {
         Row: {
+          content_text: string | null
           created_at: string
           created_by: string | null
+          gradient_from: string | null
+          gradient_to: string | null
           id: string
           image_url: string | null
           is_active: boolean
@@ -728,8 +731,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          content_text?: string | null
           created_at?: string
           created_by?: string | null
+          gradient_from?: string | null
+          gradient_to?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -739,8 +745,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          content_text?: string | null
           created_at?: string
           created_by?: string | null
+          gradient_from?: string | null
+          gradient_to?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
