@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, ChevronLeft, ChevronRight, Gift } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 
 interface FlashScreenItem {
   id: string;
@@ -11,18 +12,22 @@ interface FlashScreenItem {
   image_url: string | null;
   link_url: string | null;
   sort_order: number;
+  content_text: string | null;
+  gradient_from: string | null;
+  gradient_to: string | null;
 }
 
 interface PopupSettings {
   open_trigger: string;
   open_delay_seconds: number;
   auto_disappear_seconds: number;
+  target_audience: string;
 }
 
 const fetchFlashScreens = async (): Promise<FlashScreenItem[]> => {
   const { data } = await supabase
     .from("offer_flash_screens" as any)
-    .select("id, title, image_url, link_url, sort_order")
+    .select("id, title, image_url, link_url, sort_order, content_text, gradient_from, gradient_to")
     .eq("is_active", true)
     .order("sort_order");
   return (data as any as FlashScreenItem[]) ?? [];
@@ -32,13 +37,14 @@ const fetchPopupSettings = async (): Promise<PopupSettings> => {
   const { data } = await supabase
     .from("app_settings")
     .select("key, value")
-    .in("key", ["flash_popup_open_trigger", "flash_popup_open_delay", "flash_popup_auto_disappear"]);
+    .in("key", ["flash_popup_open_trigger", "flash_popup_open_delay", "flash_popup_auto_disappear", "flash_popup_target_audience"]);
   const map: Record<string, string> = {};
   (data ?? []).forEach((r) => { if (r.value) map[r.key] = r.value; });
   return {
     open_trigger: map["flash_popup_open_trigger"] || "refresh",
     open_delay_seconds: parseInt(map["flash_popup_open_delay"] || "2") || 2,
     auto_disappear_seconds: parseInt(map["flash_popup_auto_disappear"] || "0"),
+    target_audience: map["flash_popup_target_audience"] || "all",
   };
 };
 
@@ -48,6 +54,7 @@ const OfferFlashPopup = () => {
   const [countdown, setCountdown] = useState<number | null>(null);
   const navigate = useNavigate();
   const autoCloseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { user } = useAuth();
 
   const { data: screens = [] } = useQuery({
     queryKey: ["offer-flash-screens"],
@@ -69,9 +76,12 @@ const OfferFlashPopup = () => {
     }
   }, [screens.length, current]);
 
-  // Auto-show logic based on settings
+  // Auto-show logic based on settings & target audience
   useEffect(() => {
     if (screens.length === 0 || !popupSettings || current === -1) return;
+
+    // Check target audience
+    if (popupSettings.target_audience === "unlogged" && user) return;
 
     const delaySec = popupSettings.open_delay_seconds;
 
@@ -81,7 +91,7 @@ const OfferFlashPopup = () => {
       const timer = setTimeout(() => setOpen(true), delaySec * 1000);
       return () => clearTimeout(timer);
     }
-  }, [screens.length, popupSettings, current]);
+  }, [screens.length, popupSettings, current, user]);
 
   // Countdown ticker
   useEffect(() => {
@@ -122,6 +132,8 @@ const OfferFlashPopup = () => {
 
   const screen = screens[current];
   const hasMultiple = screens.length > 1;
+  const gradFrom = screen.gradient_from || '#6366f1';
+  const gradTo = screen.gradient_to || '#8b5cf6';
 
   return (
     <>
@@ -167,7 +179,7 @@ const OfferFlashPopup = () => {
               </div>
             )}
 
-            {/* Banner image */}
+            {/* Banner content */}
             {screen.image_url ? (
               <img
                 src={screen.image_url}
@@ -177,12 +189,20 @@ const OfferFlashPopup = () => {
               />
             ) : (
               <div
-                className="w-full aspect-[3/4] rounded-xl bg-gradient-to-br from-primary to-accent flex flex-col items-center justify-center cursor-pointer p-6"
+                className="w-full aspect-[3/4] rounded-xl flex flex-col items-center justify-center cursor-pointer p-6"
+                style={{ background: `linear-gradient(135deg, ${gradFrom}, ${gradTo})` }}
                 onClick={() => handleClick(screen.link_url)}
               >
-                <Gift className="h-16 w-16 text-primary-foreground mb-4" />
-                <h2 className="text-2xl font-bold text-primary-foreground text-center">{screen.title}</h2>
-                <p className="text-primary-foreground/80 text-sm mt-2">Tap to explore</p>
+                <Gift className="h-16 w-16 text-white mb-4 drop-shadow-lg" />
+                <h2 className="text-2xl font-bold text-white text-center drop-shadow">{screen.title}</h2>
+                {screen.content_text && (
+                  <p className="text-white/90 text-sm mt-3 text-center leading-relaxed max-w-[280px]">
+                    {screen.content_text}
+                  </p>
+                )}
+                {!screen.content_text && (
+                  <p className="text-white/70 text-sm mt-2">Tap to explore</p>
+                )}
               </div>
             )}
 

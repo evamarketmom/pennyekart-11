@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,23 +22,34 @@ interface FlashScreen {
   link_url: string | null;
   is_active: boolean;
   sort_order: number;
+  content_text: string | null;
+  gradient_from: string | null;
+  gradient_to: string | null;
 }
 
 interface PopupSettings {
   open_trigger: string;
   open_delay_seconds: number;
   auto_disappear_seconds: number;
+  target_audience: string;
 }
 
 const defaultSettings: PopupSettings = {
   open_trigger: "refresh",
   open_delay_seconds: 2,
   auto_disappear_seconds: 0,
+  target_audience: "all",
 };
 
-const emptyForm = { title: "", image_url: "", link_url: "", is_active: true, sort_order: 0 };
+const emptyForm = {
+  title: "", image_url: "", link_url: "", is_active: true, sort_order: 0,
+  content_text: "", gradient_from: "#6366f1", gradient_to: "#8b5cf6",
+};
 
-const SETTINGS_KEYS = ["flash_popup_open_trigger", "flash_popup_open_delay", "flash_popup_auto_disappear"];
+const SETTINGS_KEYS = [
+  "flash_popup_open_trigger", "flash_popup_open_delay",
+  "flash_popup_auto_disappear", "flash_popup_target_audience",
+];
 
 const FlashScreenManager = () => {
   const [items, setItems] = useState<FlashScreen[]>([]);
@@ -71,6 +83,7 @@ const FlashScreenManager = () => {
         open_trigger: map["flash_popup_open_trigger"] || defaultSettings.open_trigger,
         open_delay_seconds: parseInt(map["flash_popup_open_delay"] || "") || defaultSettings.open_delay_seconds,
         auto_disappear_seconds: parseInt(map["flash_popup_auto_disappear"] || "0"),
+        target_audience: map["flash_popup_target_audience"] || defaultSettings.target_audience,
       });
     }
   };
@@ -83,6 +96,7 @@ const FlashScreenManager = () => {
       { key: "flash_popup_open_trigger", value: settings.open_trigger, description: "Flash popup trigger: refresh or countdown" },
       { key: "flash_popup_open_delay", value: String(settings.open_delay_seconds), description: "Delay in seconds before popup appears" },
       { key: "flash_popup_auto_disappear", value: String(settings.auto_disappear_seconds), description: "Auto disappear time in seconds (0 = manual close)" },
+      { key: "flash_popup_target_audience", value: settings.target_audience, description: "Target audience: all, unlogged, or every_refresh" },
     ];
     for (const p of pairs) {
       const { data: existing } = await supabase.from("app_settings").select("id").eq("key", p.key).maybeSingle();
@@ -101,11 +115,21 @@ const FlashScreenManager = () => {
       toast({ title: "Title is required", variant: "destructive" });
       return;
     }
+    const payload = {
+      title: form.title,
+      image_url: form.image_url || null,
+      link_url: form.link_url || null,
+      is_active: form.is_active,
+      sort_order: form.sort_order,
+      content_text: form.content_text || null,
+      gradient_from: form.gradient_from || '#6366f1',
+      gradient_to: form.gradient_to || '#8b5cf6',
+    };
     if (editId) {
-      const { error } = await (supabase.from("offer_flash_screens" as any) as any).update(form).eq("id", editId);
+      const { error } = await (supabase.from("offer_flash_screens" as any) as any).update(payload).eq("id", editId);
       if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
     } else {
-      const { error } = await (supabase.from("offer_flash_screens" as any) as any).insert({ ...form, created_by: user?.id });
+      const { error } = await (supabase.from("offer_flash_screens" as any) as any).insert({ ...payload, created_by: user?.id });
       if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
     }
     setOpen(false);
@@ -128,6 +152,9 @@ const FlashScreenManager = () => {
       link_url: item.link_url ?? "",
       is_active: item.is_active,
       sort_order: item.sort_order,
+      content_text: item.content_text ?? "",
+      gradient_from: item.gradient_from ?? "#6366f1",
+      gradient_to: item.gradient_to ?? "#8b5cf6",
     });
     setEditId(item.id);
     setOpen(true);
@@ -168,41 +195,64 @@ const FlashScreenManager = () => {
             <h4 className="text-sm font-semibold flex items-center gap-2">
               <Settings2 className="h-4 w-4" /> Popup Behavior Settings
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Target Audience */}
               <div className="space-y-1.5">
-                <Label className="text-xs">When to open</Label>
+                <Label className="text-xs">When to show popup</Label>
+                <Select value={settings.target_audience} onValueChange={(v) => setSettings({ ...settings, target_audience: v })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All users</SelectItem>
+                    <SelectItem value="unlogged">Un-logged in users only</SelectItem>
+                    <SelectItem value="every_refresh">After every refresh</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[10px] text-muted-foreground">
+                  {settings.target_audience === "unlogged"
+                    ? "Only shows to visitors who are not logged in"
+                    : settings.target_audience === "every_refresh"
+                    ? "Shows every time the page is refreshed"
+                    : "Shows to all users"}
+                </p>
+              </div>
+
+              {/* Open Trigger */}
+              <div className="space-y-1.5">
+                <Label className="text-xs">Open trigger</Label>
                 <Select value={settings.open_trigger} onValueChange={(v) => setSettings({ ...settings, open_trigger: v })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="refresh">On page refresh/load</SelectItem>
+                    <SelectItem value="refresh">On page load</SelectItem>
                     <SelectItem value="countdown">After countdown delay</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-[10px] text-muted-foreground">
                   {settings.open_trigger === "refresh"
-                    ? "Popup shows each time the page loads"
-                    : "Popup shows after a countdown timer"}
+                    ? "Popup shows when page loads"
+                    : "Popup shows after countdown"}
                 </p>
               </div>
 
-              {settings.open_trigger === "refresh" && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Open delay (seconds)</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={60}
-                    value={settings.open_delay_seconds}
-                    onChange={(e) => setSettings({ ...settings, open_delay_seconds: Math.max(0, parseInt(e.target.value) || 0) })}
-                  />
-                  <p className="text-[10px] text-muted-foreground">
-                    Wait this many seconds before showing the popup
-                  </p>
-                </div>
-              )}
+              {/* Open Delay */}
+              <div className="space-y-1.5">
+                <Label className="text-xs">Open delay (seconds)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={60}
+                  value={settings.open_delay_seconds}
+                  onChange={(e) => setSettings({ ...settings, open_delay_seconds: Math.max(0, parseInt(e.target.value) || 0) })}
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Wait this many seconds before showing
+                </p>
+              </div>
 
+              {/* Auto Disappear */}
               <div className="space-y-1.5">
                 <Label className="text-xs">Auto disappear (seconds)</Label>
                 <Input
@@ -214,8 +264,8 @@ const FlashScreenManager = () => {
                 />
                 <p className="text-[10px] text-muted-foreground">
                   {settings.auto_disappear_seconds === 0
-                    ? "Manual close only (no auto disappear)"
-                    : `Popup auto-closes after ${settings.auto_disappear_seconds}s`}
+                    ? "Manual close only"
+                    : `Auto-closes after ${settings.auto_disappear_seconds}s`}
                 </p>
               </div>
             </div>
@@ -234,8 +284,11 @@ const FlashScreenManager = () => {
                 {item.image_url ? (
                   <img src={item.image_url} alt={item.title} className="w-full h-32 rounded-md object-cover" />
                 ) : (
-                  <div className="w-full h-32 rounded-md bg-muted flex items-center justify-center">
-                    <Image className="h-8 w-8 text-muted-foreground" />
+                  <div
+                    className="w-full h-32 rounded-md flex items-center justify-center text-white text-sm font-medium px-3 text-center"
+                    style={{ background: `linear-gradient(135deg, ${item.gradient_from || '#6366f1'}, ${item.gradient_to || '#8b5cf6'})` }}
+                  >
+                    {item.content_text || item.title}
                   </div>
                 )}
                 <div className="flex items-center justify-between">
@@ -266,7 +319,7 @@ const FlashScreenManager = () => {
       </CardContent>
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setForm(emptyForm); setEditId(null); } }}>
-        <DialogContent>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editId ? "Edit Flash Screen Banner" : "New Flash Screen Banner"}</DialogTitle>
           </DialogHeader>
@@ -275,11 +328,65 @@ const FlashScreenManager = () => {
               <Label>Title</Label>
               <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
             </div>
+            <div>
+              <Label>Content Text (manual content)</Label>
+              <Textarea
+                value={form.content_text}
+                onChange={(e) => setForm({ ...form, content_text: e.target.value })}
+                placeholder="Add custom text content for the popup notification..."
+                rows={3}
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">This text shows on the gradient background when no image is set</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Gradient From</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={form.gradient_from}
+                    onChange={(e) => setForm({ ...form, gradient_from: e.target.value })}
+                    className="h-9 w-12 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={form.gradient_from}
+                    onChange={(e) => setForm({ ...form, gradient_from: e.target.value })}
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Gradient To</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={form.gradient_to}
+                    onChange={(e) => setForm({ ...form, gradient_to: e.target.value })}
+                    className="h-9 w-12 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={form.gradient_to}
+                    onChange={(e) => setForm({ ...form, gradient_to: e.target.value })}
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            </div>
+            {/* Preview */}
+            <div>
+              <Label className="text-xs">Gradient Preview</Label>
+              <div
+                className="w-full h-20 rounded-lg flex items-center justify-center text-white text-sm font-medium px-4 text-center"
+                style={{ background: `linear-gradient(135deg, ${form.gradient_from}, ${form.gradient_to})` }}
+              >
+                {form.content_text || form.title || "Preview"}
+              </div>
+            </div>
             <ImageUpload
               bucket="banners"
               value={form.image_url}
               onChange={(url) => setForm({ ...form, image_url: url })}
-              label="Banner Image"
+              label="Banner Image (optional - overrides gradient)"
             />
             <div>
               <Label>Link URL (optional)</Label>
