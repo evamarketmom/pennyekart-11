@@ -11,11 +11,29 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { action, mobile_number, date_of_birth, new_password } = await req.json();
+    const { action, mobile_number, date_of_birth, new_password, user_id } = await req.json();
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, serviceKey);
+
+    // Admin reset by user_id (no DOB verification needed)
+    if (action === "reset_by_admin") {
+      if (!user_id || !new_password || new_password.length < 6) {
+        return new Response(JSON.stringify({ success: false, message: "User ID and password (min 6 chars) required." }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { error: updateError } = await admin.auth.admin.updateUserById(user_id, { password: new_password });
+      if (updateError) {
+        return new Response(JSON.stringify({ success: false, message: updateError.message }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Find profile by mobile number
     const { data: profile, error: profileError } = await admin

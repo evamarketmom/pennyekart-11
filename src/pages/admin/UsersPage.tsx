@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import CustomerList from "@/components/admin/CustomerList";
-import { Search, ChevronLeft, ChevronRight, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, MoreHorizontal, Pencil, Trash2, KeyRound } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -83,6 +83,11 @@ const UsersPage = () => {
   // Delete dialog state
   const [deleteUser, setDeleteUser] = useState<Profile | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Reset password dialog state
+  const [resetUser, setResetUser] = useState<Profile | null>(null);
+  const [resetForm, setResetForm] = useState({ new_password: "", confirm_password: "" });
+  const [resetting, setResetting] = useState(false);
 
   const fetchData = async () => {
     const [usersRes, rolesRes, localBodiesRes, districtsRes, ordersRes, walletsRes] = await Promise.all([
@@ -235,6 +240,34 @@ const UsersPage = () => {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!resetUser) return;
+    if (resetForm.new_password !== resetForm.confirm_password) {
+      toast({ title: "Passwords don't match", variant: "destructive" });
+      return;
+    }
+    if (resetForm.new_password.length < 6) {
+      toast({ title: "Password must be at least 6 characters", variant: "destructive" });
+      return;
+    }
+    setResetting(true);
+    const { data, error } = await supabase.functions.invoke("reset-password", {
+      body: {
+        action: "reset_by_admin",
+        user_id: resetUser.user_id,
+        new_password: resetForm.new_password,
+      },
+    });
+    setResetting(false);
+    if (error || !data?.success) {
+      toast({ title: "Reset failed", description: data?.message || "Could not reset password.", variant: "destructive" });
+    } else {
+      toast({ title: "Password reset successful!" });
+      setResetUser(null);
+      setResetForm({ new_password: "", confirm_password: "" });
+    }
+  };
+
   const getTypeBadgeVariant = (type: string) => {
     switch (type) {
       case "delivery_staff": return "default";
@@ -348,6 +381,11 @@ const UsersPage = () => {
                           <DropdownMenuItem onClick={() => openEditDialog(u)}>
                             <Pencil className="h-4 w-4 mr-2" /> Edit
                           </DropdownMenuItem>
+                          {u.user_type !== "customer" && (
+                            <DropdownMenuItem onClick={() => { setResetUser(u); setResetForm({ new_password: "", confirm_password: "" }); }}>
+                              <KeyRound className="h-4 w-4 mr-2" /> Reset Password
+                            </DropdownMenuItem>
+                          )}
                           {isSuperAdmin && (
                             <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setDeleteUser(u)}>
                               <Trash2 className="h-4 w-4 mr-2" /> Delete
@@ -453,6 +491,34 @@ const UsersPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={!!resetUser} onOpenChange={(open) => !open && setResetUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Reset password for <strong>{resetUser?.full_name ?? resetUser?.mobile_number ?? "this user"}</strong>
+          </p>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>New Password</Label>
+              <Input type="password" value={resetForm.new_password} onChange={(e) => setResetForm(f => ({ ...f, new_password: e.target.value }))} minLength={6} placeholder="Min 6 characters" />
+            </div>
+            <div className="space-y-2">
+              <Label>Repeat Password</Label>
+              <Input type="password" value={resetForm.confirm_password} onChange={(e) => setResetForm(f => ({ ...f, confirm_password: e.target.value }))} minLength={6} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetUser(null)}>Cancel</Button>
+            <Button onClick={handleResetPassword} disabled={resetting || !resetForm.new_password || !resetForm.confirm_password}>
+              {resetting ? "Resetting..." : "Reset Password"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };
