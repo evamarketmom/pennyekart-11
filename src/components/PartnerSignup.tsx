@@ -1,10 +1,15 @@
 import { useState, useEffect } from "react";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
 
@@ -125,7 +130,36 @@ const PartnerSignup = ({ userType, title, description }: Props) => {
             </div>
             <div>
               <Label htmlFor="dob">Date of Birth</Label>
-              <Input id="dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)} required />
+              <div className="flex gap-2">
+                <Input
+                  id="dob"
+                  type="date"
+                  value={dob}
+                  onChange={(e) => setDob(e.target.value)}
+                  className="flex-1"
+                  required
+                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="icon" type="button" className="shrink-0">
+                      <CalendarIcon className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                      mode="single"
+                      selected={dob ? new Date(dob + "T00:00:00") : undefined}
+                      onSelect={(date) => date && setDob(format(date, "yyyy-MM-dd"))}
+                      disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                      captionLayout="dropdown-buttons"
+                      fromYear={1940}
+                      toYear={new Date().getFullYear()}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
             <div>
               <Label htmlFor="district">District</Label>
