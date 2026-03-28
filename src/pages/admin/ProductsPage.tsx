@@ -615,11 +615,11 @@ const ProductsPage = () => {
 
         {/* SELLER PRODUCTS TAB */}
         <TabsContent value="sellers">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search seller products..." value={sellerSearch} onChange={(e) => setSellerSearch(e.target.value)} className="pl-9 w-48 h-9" />
+                <Input placeholder="Search seller products..." value={sellerSearch} onChange={(e) => setSellerSearch(e.target.value)} className="pl-9 w-full sm:w-48 h-9" />
               </div>
               <select className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm" value={sellerCategoryFilter} onChange={(e) => setSellerCategoryFilter(e.target.value)}>
                 <option value="">All Categories</option>
@@ -636,7 +636,42 @@ const ProductsPage = () => {
               <ExternalLink className="ml-1 h-3.5 w-3.5" />
             </Button>
           </div>
-          <div className="admin-table-wrap">
+
+          {/* Mobile card view */}
+          <div className="block md:hidden space-y-3">
+            {sellerProducts.filter(p => (!sellerCategoryFilter || p.category === sellerCategoryFilter) && (!sellerFilter || p.seller_id === sellerFilter) && (!sellerSearch || p.name.toLowerCase().includes(sellerSearch.toLowerCase()))).map((p) => (
+              <div key={p.id} className="rounded-lg border bg-card p-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{p.name}</p>
+                    <p className="text-xs text-muted-foreground">{p.category ?? "No category"}</p>
+                  </div>
+                  {p.is_approved
+                    ? <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-0 gap-1 text-[10px] shrink-0"><CheckCircle className="h-3 w-3" /> Approved</Badge>
+                    : <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 border-0 gap-1 text-[10px] shrink-0"><XCircle className="h-3 w-3" /> Pending</Badge>}
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div><span className="text-muted-foreground">Purchase:</span> ₹{p.purchase_rate}</div>
+                  <div><span className="text-muted-foreground">Price:</span> ₹{p.price}</div>
+                  <div><span className="text-muted-foreground">MRP:</span> ₹{p.mrp}</div>
+                  <div><span className="text-muted-foreground">Margin:</span> <span className="text-primary font-medium">{getEffectiveMargin(p).toFixed(1)}%</span></div>
+                  <div><span className="text-muted-foreground">Discount:</span> ₹{p.discount_rate}</div>
+                </div>
+                <div className="flex gap-1 pt-1 border-t">
+                  <Button variant="ghost" size="sm" onClick={async () => { setDetailProduct(p); setDetailType("seller"); const { data } = await supabase.from("profiles").select("company_name, business_address, business_city, business_state, business_pincode, business_phone, business_email, full_name, gst_number").eq("user_id", p.seller_id).single(); setDetailSellerInfo(data); }}><Eye className="h-3.5 w-3.5" /></Button>
+                  <Button variant="ghost" size="sm" onClick={() => openSellerEdit(p)}><Pencil className="h-3.5 w-3.5" /></Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleSellerDelete(p.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                  <Button variant={p.is_approved ? "outline" : "default"} size="sm" onClick={() => toggleSellerApproval(p)} className="ml-auto">
+                    {p.is_approved ? "Revoke" : "Approve"}
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {sellerProducts.length === 0 && <p className="py-8 text-center text-muted-foreground">No seller products found.</p>}
+          </div>
+
+          {/* Desktop table view */}
+          <div className="admin-table-wrap hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
