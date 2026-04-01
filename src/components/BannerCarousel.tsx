@@ -30,7 +30,7 @@ const fetchBanners = async () => {
 
 const BannerCarousel = () => {
   const [current, setCurrent] = useState(0);
-  const { data: banners = fallbackBanners } = useQuery({
+  const { data: banners = [] } = useQuery({
     queryKey: ["banners"],
     queryFn: fetchBanners,
     staleTime: 10 * 60 * 1000,
