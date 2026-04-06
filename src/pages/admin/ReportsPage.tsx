@@ -181,7 +181,7 @@ const ReportsPage = () => {
         supabase.from("products").select("id,name,price,purchase_rate,mrp,stock,is_active,category"),
         supabase.from("seller_products").select("id,name,price,purchase_rate,stock,seller_id,is_approved"),
         supabase.from("godown_stock").select("id,quantity,product_id,purchase_price,godown_id"),
-        supabase.from("profiles").select("user_id,full_name,user_type,local_body_id,ward_number"),
+        supabase.from("profiles").select("user_id,full_name,user_type,local_body_id,ward_number,created_at,mobile_number"),
         supabase.from("seller_wallets").select("seller_id,balance"),
         supabase.from("seller_wallet_transactions").select("seller_id,type,amount,description"),
         supabase.from("locations_local_bodies").select("id,name,district_id,ward_count"),
