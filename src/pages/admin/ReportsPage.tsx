@@ -19,7 +19,8 @@ import {
 } from "recharts";
 import {
   TrendingUp, TrendingDown, ShoppingCart, Package, Users, Wallet,
-  Store, Truck, BarChart3, AlertTriangle, CheckCircle, Search
+  Store, Truck, BarChart3, AlertTriangle, CheckCircle, Search,
+  UserCheck, UserX, UserPlus, Activity
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
