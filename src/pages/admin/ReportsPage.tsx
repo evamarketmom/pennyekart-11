@@ -33,7 +33,7 @@ interface Order {
 interface Product { id: string; name: string; price: number; purchase_rate: number; mrp: number; stock: number; is_active: boolean; category: string | null; }
 interface SellerProduct { id: string; name: string; price: number; purchase_rate: number; stock: number; seller_id: string; is_approved: boolean; }
 interface GodownStock { id: string; quantity: number; product_id: string; purchase_price: number; godown_id: string; }
-interface Profile { user_id: string; full_name: string | null; user_type: string; local_body_id: string | null; ward_number: number | null; }
+interface Profile { user_id: string; full_name: string | null; user_type: string; local_body_id: string | null; ward_number: number | null; created_at: string; mobile_number: string | null; }
 interface SellerWallet { seller_id: string; balance: number; }
 interface SellerWalletTxn { seller_id: string; type: string; amount: number; description: string | null; }
 interface LocalBody { id: string; name: string; district_id: string; ward_count: number; }
