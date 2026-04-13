@@ -50,7 +50,7 @@ const fetchAreaProducts = async (localBodyId: string, wardNumber: number): Promi
       .gt("quantity", 0),
     supabase
       .from("seller_products")
-      .select("id, name, price, mrp, discount_rate, image_url, description, category, stock, coming_soon, wallet_points")
+      .select("id, name, price, mrp, discount_rate, image_url, description, category, stock, coming_soon, wallet_points, seller_id")
       .in("area_godown_id", godownArr)
       .eq("is_active", true)
       .eq("is_approved", true)
