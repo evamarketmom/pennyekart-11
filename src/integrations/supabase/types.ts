@@ -1148,6 +1148,7 @@ export type Database = {
           business_state: string | null
           company_name: string | null
           created_at: string
+          customer_id: string | null
           date_of_birth: string | null
           delivery_type: string | null
           email: string | null
@@ -1183,6 +1184,7 @@ export type Database = {
           business_state?: string | null
           company_name?: string | null
           created_at?: string
+          customer_id?: string | null
           date_of_birth?: string | null
           delivery_type?: string | null
           email?: string | null
@@ -1218,6 +1220,7 @@ export type Database = {
           business_state?: string | null
           company_name?: string | null
           created_at?: string
+          customer_id?: string | null
           date_of_birth?: string | null
           delivery_type?: string | null
           email?: string | null
