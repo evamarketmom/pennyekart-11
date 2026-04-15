@@ -225,6 +225,10 @@ const ProductDetail = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       if (!id) return;
+      setLoading(true);
+      setSimilarProducts([]);
+      setProduct(null);
+      setSelectedVariant(null);
 
       // Try main products table first
       let productData: ProductData | null = null;
