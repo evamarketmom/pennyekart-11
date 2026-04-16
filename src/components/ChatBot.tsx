@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { MessageCircle, X, Send, Mic, MicOff } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -13,6 +14,9 @@ const ChatBot = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [enabled, setEnabled] = useState(true);
+  const [botName, setBotName] = useState("Penny Assistant");
+  const [welcomeMessage, setWelcomeMessage] = useState("Hi! 👋 I'm Penny, your shopping assistant. How can I help you today?");
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
@@ -20,6 +24,20 @@ const ChatBot = () => {
   const hasSpeechSupport =
     typeof window !== "undefined" &&
     ("webkitSpeechRecognition" in window || "SpeechRecognition" in window);
+
+  // Fetch chatbot config
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("chatbot_config").select("key, value");
+      if (data) {
+        const map: Record<string, string | null> = {};
+        data.forEach((r: any) => { map[r.key] = r.value; });
+        if (map.enabled === "false") setEnabled(false);
+        if (map.bot_name) setBotName(map.bot_name);
+        if (map.welcome_message) setWelcomeMessage(map.welcome_message);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -130,9 +148,10 @@ const ChatBot = () => {
     setIsListening(true);
   };
 
+  if (!enabled) return null;
+
   return (
     <>
-      {/* Floating bubble */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
@@ -143,26 +162,21 @@ const ChatBot = () => {
         </button>
       )}
 
-      {/* Chat window */}
       {open && (
         <div className="fixed bottom-20 right-2 z-50 md:bottom-4 md:right-4 w-[calc(100vw-16px)] max-w-sm h-[70vh] max-h-[520px] bg-background border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-          {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-primary text-primary-foreground rounded-t-2xl">
             <div className="flex items-center gap-2">
               <MessageCircle className="w-5 h-5" />
-              <span className="font-heading font-semibold text-sm">Penny Assistant</span>
+              <span className="font-heading font-semibold text-sm">{botName}</span>
             </div>
             <button onClick={() => setOpen(false)} aria-label="Close chat">
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Messages */}
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-3">
             {messages.length === 0 && (
-              <p className="text-muted-foreground text-sm text-center mt-8">
-                Hi! 👋 I'm Penny, your shopping assistant. How can I help you today?
-              </p>
+              <p className="text-muted-foreground text-sm text-center mt-8">{welcomeMessage}</p>
             )}
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
@@ -192,7 +206,6 @@ const ChatBot = () => {
             )}
           </div>
 
-          {/* Input */}
           <div className="border-t border-border px-3 py-2 flex items-center gap-2">
             {hasSpeechSupport && (
               <button

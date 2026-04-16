@@ -125,6 +125,93 @@ export type Database = {
         }
         Relationships: []
       }
+      chatbot_api_keys: {
+        Row: {
+          api_key: string
+          base_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          service_name: string
+          updated_at: string
+        }
+        Insert: {
+          api_key: string
+          base_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          service_name: string
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string
+          base_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          service_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      chatbot_config: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: string | null
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string | null
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string | null
+        }
+        Relationships: []
+      }
+      chatbot_knowledge: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_active: boolean
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_search_history: {
         Row: {
           created_at: string

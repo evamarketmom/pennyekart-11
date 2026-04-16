@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,9 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `You are Penny, the friendly AI assistant for Pennyekart — an online grocery and essentials delivery platform based in Kerala, India.
-
-IMPORTANT: Always respond in Malayalam (മലയാളം) language. Use Malayalam script for all responses. If the user writes in English or any other language, still reply in Malayalam.
+const DEFAULT_SYSTEM_PROMPT = `You are Penny, the friendly AI assistant for Pennyekart — an online grocery and essentials delivery platform based in Kerala, India.
 
 Your role:
 - Help customers find products, check availability, and understand pricing
@@ -31,6 +30,12 @@ Key facts:
 If you don't know something specific (like a customer's order status), politely suggest they check their profile/orders page or contact support.
 Never make up product prices or availability — suggest the customer search for the product in the app.`;
 
+const LANGUAGE_INSTRUCTIONS: Record<string, string> = {
+  malayalam: "\n\nIMPORTANT: Always respond in Malayalam (മലയാളം) language. Use Malayalam script for all responses. If the user writes in English or any other language, still reply in Malayalam.",
+  english: "\n\nIMPORTANT: Always respond in English.",
+  auto: "\n\nIMPORTANT: Respond in the same language the user writes in. If unclear, use Malayalam (മലയാളം).",
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -51,6 +56,47 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    // Fetch config and knowledge from DB
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const sb = createClient(supabaseUrl, supabaseServiceKey);
+
+    const [configRes, knowledgeRes] = await Promise.all([
+      sb.from("chatbot_config").select("key, value"),
+      sb.from("chatbot_knowledge").select("title, content").eq("is_active", true).order("sort_order"),
+    ]);
+
+    const config: Record<string, string | null> = {};
+    (configRes.data ?? []).forEach((r: any) => { config[r.key] = r.value; });
+
+    // Check enabled
+    if (config.enabled === "false") {
+      return new Response(JSON.stringify({ error: "Chatbot is currently disabled" }), {
+        status: 503,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Build system prompt
+    let systemPrompt = config.system_prompt || DEFAULT_SYSTEM_PROMPT;
+
+    // Append language instruction
+    const lang = config.response_language || "malayalam";
+    systemPrompt += LANGUAGE_INSTRUCTIONS[lang] || LANGUAGE_INSTRUCTIONS.malayalam;
+
+    // Append knowledge base
+    const knowledgeEntries = knowledgeRes.data ?? [];
+    if (knowledgeEntries.length > 0) {
+      systemPrompt += "\n\n--- KNOWLEDGE BASE ---";
+      for (const entry of knowledgeEntries) {
+        systemPrompt += `\n\n### ${entry.title}\n${entry.content}`;
+      }
+    }
+
+    // Trim message history
+    const maxHistory = parseInt(config.max_history_messages || "20", 10);
+    const trimmedMessages = messages.slice(-maxHistory);
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -60,8 +106,8 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          ...messages,
+          { role: "system", content: systemPrompt },
+          ...trimmedMessages,
         ],
         stream: true,
       }),

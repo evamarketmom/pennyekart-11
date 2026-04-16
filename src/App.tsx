@@ -39,6 +39,7 @@ import SalesReportPage from "./pages/admin/SalesReportPage";
 import WalletManagementPage from "./pages/admin/WalletManagementPage";
 import PennyPrimePage from "./pages/admin/PennyPrimePage";
 import PlatformMarginPage from "./pages/admin/PlatformMarginPage";
+import ChatbotSettingsPage from "./pages/admin/ChatbotSettingsPage";
 import PennyPrimePublic from "./pages/PennyPrime";
 import DeliveryStaffSignup from "./pages/delivery-staff/Signup";
 import DeliveryStaffLogin from "./pages/delivery-staff/Login";
@@ -93,6 +94,7 @@ const AppRoutes = () => {
       <Route path="/admin/wallets" element={<ProtectedRoute requirePermission="read_users"><WalletManagementPage /></ProtectedRoute>} />
       <Route path="/admin/penny-prime" element={<ProtectedRoute requirePermission="read_orders"><PennyPrimePage /></ProtectedRoute>} />
       <Route path="/admin/platform-margin" element={<ProtectedRoute requirePermission="read_products"><PlatformMarginPage /></ProtectedRoute>} />
+      <Route path="/admin/chatbot" element={<ProtectedRoute requirePermission="read_settings"><ChatbotSettingsPage /></ProtectedRoute>} />
       <Route path="/penny-prime" element={<PennyPrimePublic />} />
 
       {/* Delivery Staff */}
