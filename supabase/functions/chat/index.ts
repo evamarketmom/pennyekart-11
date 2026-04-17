@@ -180,6 +180,60 @@ function buildTools(config: Record<string, string | null>) {
           },
         },
       });
+
+      tools.push({
+        type: "function",
+        function: {
+          name: "elife_log_daily_work",
+          description: "Log a daily work entry for an e-Life agent into `agent_work_logs`. Looks up the agent by mobile, then inserts (work_date, work_details). REQUIRES explicit user confirmation.",
+          parameters: {
+            type: "object",
+            properties: {
+              mobile: { type: "string", description: "Agent's 10-digit mobile" },
+              work_text: { type: "string", description: "What the agent did today (free text)" },
+              work_date: { type: "string", description: "Optional ISO date YYYY-MM-DD; defaults to today" },
+              confirmed: { type: "boolean", description: "Must be true after the user confirms." },
+            },
+            required: ["mobile", "work_text", "confirmed"],
+          },
+        },
+      });
+
+      tools.push({
+        type: "function",
+        function: {
+          name: "elife_submit_task_feedback",
+          description: "Submit feedback for an e-Life agent task into `pennyekart_agent_task_feedback`. status must be 'completed' or 'not_completed'. Looks up agent by mobile. REQUIRES confirmation.",
+          parameters: {
+            type: "object",
+            properties: {
+              mobile: { type: "string" },
+              task_id: { type: "string" },
+              status: { type: "string", enum: ["completed", "not_completed"] },
+              remarks: { type: "string" },
+              confirmed: { type: "boolean" },
+            },
+            required: ["mobile", "task_id", "status", "confirmed"],
+          },
+        },
+      });
+
+      tools.push({
+        type: "function",
+        function: {
+          name: "elife_file_complaint",
+          description: "File a complaint for an e-Life agent into `agent_complaints`. Looks up the agent by mobile. REQUIRES confirmation.",
+          parameters: {
+            type: "object",
+            properties: {
+              mobile: { type: "string" },
+              complaint_text: { type: "string" },
+              confirmed: { type: "boolean" },
+            },
+            required: ["mobile", "complaint_text", "confirmed"],
+          },
+        },
+      });
     }
 
     if (config.elife_twilio_passthrough === "true") {
