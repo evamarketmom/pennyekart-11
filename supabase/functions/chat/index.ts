@@ -233,40 +233,95 @@ async function executeTool(
   }
 
   if (name === "elife_check_payment_status") {
-    const mobile = String(args.mobile || "").replace(/\D/g, "");
-    if (mobile.length < 10) return { error: "Invalid mobile number" };
-    // Try common table names
-    for (const table of ["registrations", "payments", "customers"]) {
-      if (ctx.allowedTables.length && !ctx.allowedTables.includes(table)) continue;
-      const { data } = await ctx.elife.from(table).select("*").or(`mobile.eq.${mobile},mobile_number.eq.${mobile},phone.eq.${mobile}`).limit(5);
-      if (data && data.length) return { source: table, results: data };
+    const mobile = normalizeMobile(args.mobile);
+    if (mobile.length < 10) return { error: "Invalid mobile number — please give a 10-digit number." };
+
+    const hit = await findByMobile(ctx.elife, ctx.allowedTables, mobile, [
+      { table: "program_registrations", cols: ["mobile", "mobile_number", "phone", "whatsapp_number", "contact_number"] },
+      { table: "old_payments", cols: ["mobile", "mobile_number", "phone", "whatsapp_number", "contact_number"] },
+      { table: "members", cols: ["mobile", "mobile_number", "phone", "whatsapp_number", "contact_number"] },
+    ]);
+
+    if (!hit) {
+      return { results: [], note: `No payment/registration records found for ${mobile} in program_registrations, old_payments, or members.` };
     }
-    return { results: [], note: "No matching records found in allowed e-Life tables." };
+    return { source: hit.source, mobile, results: hit.rows };
   }
 
   if (name === "elife_get_agent_hierarchy") {
-    const mobile = args.mobile ? String(args.mobile).replace(/\D/g, "") : null;
+    const mobile = args.mobile ? normalizeMobile(args.mobile) : null;
     const agentId = args.agent_id ?? null;
     if (!mobile && !agentId) return { error: "Provide mobile or agent_id" };
-    for (const table of ["agents", "agent_hierarchy", "users"]) {
-      if (ctx.allowedTables.length && !ctx.allowedTables.includes(table)) continue;
-      let q = ctx.elife.from(table).select("*").limit(10);
-      if (mobile) q = q.or(`mobile.eq.${mobile},mobile_number.eq.${mobile}`);
-      else if (agentId) q = q.eq("id", agentId);
-      const { data } = await q;
-      if (data && data.length) return { source: table, agents: data };
+
+    let agent: any = null;
+    let source: string | null = null;
+
+    if (mobile) {
+      const hit = await findByMobile(ctx.elife, ctx.allowedTables, mobile, [
+        { table: "pennyekart_agents", cols: ["mobile", "mobile_number", "phone", "whatsapp_number", "contact_number"] },
+        { table: "members", cols: ["mobile", "mobile_number", "phone", "whatsapp_number", "contact_number"] },
+      ], 5);
+      if (hit) {
+        agent = hit.rows[0];
+        source = hit.source;
+      }
+    } else if (agentId) {
+      for (const table of ["pennyekart_agents", "members"]) {
+        if (ctx.allowedTables.length && !ctx.allowedTables.includes(table)) continue;
+        const { data } = await ctx.elife.from(table).select("*").eq("id", agentId).limit(1);
+        if (data && data.length) { agent = data[0]; source = table; break; }
+      }
     }
-    return { agents: [], note: "No agent records found." };
+
+    if (!agent) {
+      return { agents: [], note: `No agent found for ${mobile || agentId} in pennyekart_agents or members.` };
+    }
+
+    // Enrich with upline + downline. Try several common parent/referrer column names.
+    const uplineCandidates = ["referrer_id", "parent_id", "upline_id", "sponsor_id", "introducer_id"];
+    const uplineMobileCols = ["referrer_mobile", "parent_mobile", "upline_mobile", "sponsor_mobile"];
+
+    let upline: any = null;
+    for (const col of uplineCandidates) {
+      const val = agent[col];
+      if (!val || !source) continue;
+      const { data } = await ctx.elife.from(source).select("*").eq("id", val).limit(1);
+      if (data && data.length) { upline = data[0]; break; }
+    }
+    if (!upline) {
+      for (const col of uplineMobileCols) {
+        const val = agent[col];
+        if (!val || !source) continue;
+        const norm = normalizeMobile(val);
+        const hit = await findByMobile(ctx.elife, ctx.allowedTables, norm, [
+          { table: source, cols: ["mobile", "mobile_number", "phone", "whatsapp_number"] },
+        ], 1);
+        if (hit) { upline = hit.rows[0]; break; }
+      }
+    }
+
+    // Direct downline: anyone whose referrer_*/parent_* points to this agent (by id or mobile)
+    let downline: any[] = [];
+    if (source) {
+      const myMobile = normalizeMobile(agent.mobile || agent.mobile_number || agent.phone || agent.whatsapp_number || "");
+      const orParts: string[] = [];
+      for (const col of uplineCandidates) orParts.push(`${col}.eq.${agent.id}`);
+      if (myMobile) for (const col of uplineMobileCols) orParts.push(`${col}.eq.${myMobile}`);
+      const { data } = await ctx.elife.from(source).select("*").or(orParts.join(",")).limit(20);
+      if (data) downline = data;
+    }
+
+    return { source, agent, upline, downline_count: downline.length, downline };
   }
 
   if (name === "elife_create_registration") {
     if (!ctx.writeEnabled) return { error: "Write access is disabled by admin." };
     if (!args.confirmed) return { error: "User confirmation required." };
-    if (ctx.allowedTables.length && !ctx.allowedTables.includes("registrations")) {
-      return { error: "registrations table is not in the allowlist." };
+    if (ctx.allowedTables.length && !ctx.allowedTables.includes("program_registrations")) {
+      return { error: "program_registrations table is not in the allowlist." };
     }
-    const { data, error } = await ctx.elife.from("registrations").insert({
-      mobile: args.mobile,
+    const { data, error } = await ctx.elife.from("program_registrations").insert({
+      mobile: normalizeMobile(args.mobile),
       full_name: args.full_name,
       program_id: args.program_id,
     }).select().maybeSingle();
@@ -277,11 +332,10 @@ async function executeTool(
   if (name === "elife_send_whatsapp_command") {
     if (!ctx.writeEnabled) return { error: "Write access is disabled by admin." };
     if (!args.confirmed) return { error: "User confirmation required." };
-    // Insert into e-Life's whatsapp_commands queue table (if allowlisted)
-    if (ctx.allowedTables.length && !ctx.allowedTables.includes("whatsapp_commands")) {
-      return { error: "whatsapp_commands table is not in the allowlist." };
+    if (ctx.allowedTables.length && !ctx.allowedTables.includes("whatsapp_bot_commands")) {
+      return { error: "whatsapp_bot_commands table is not in the allowlist." };
     }
-    const { data, error } = await ctx.elife.from("whatsapp_commands").insert({
+    const { data, error } = await ctx.elife.from("whatsapp_bot_commands").insert({
       to: args.to,
       command: args.command,
       source: "pennyekart_chatbot",
