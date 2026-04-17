@@ -123,6 +123,43 @@ function buildTools(config: Record<string, string | null>) {
           },
         },
       },
+      {
+        type: "function",
+        function: {
+          name: "elife_get_my_tasks",
+          description: "Get the current tasks assigned to an e-Life agent's panchayath, plus the agent's feedback status for each. Identifies the agent by their mobile number.",
+          parameters: {
+            type: "object",
+            properties: {
+              mobile: { type: "string", description: "Agent's 10-digit mobile" },
+            },
+            required: ["mobile"],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "elife_get_work_logs",
+          description: "Get an e-Life agent's recent daily work log entries from `agent_work_logs`. Identifies the agent by mobile.",
+          parameters: {
+            type: "object",
+            properties: {
+              mobile: { type: "string", description: "Agent's 10-digit mobile" },
+              days: { type: "number", description: "How many days back to look (default 7, max 30)" },
+            },
+            required: ["mobile"],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "elife_list_whatsapp_commands",
+          description: "List the active core WhatsApp bot commands from e-Life's `whatsapp_bot_commands` table (keyword, label, response). Use when a user asks 'what commands can I send' or wants the command menu.",
+          parameters: { type: "object", properties: {} },
+        },
+      },
     );
 
     if (config.elife_write_enabled === "true") {
