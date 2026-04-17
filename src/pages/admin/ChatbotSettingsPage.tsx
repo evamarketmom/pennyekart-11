@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Eye, EyeOff, Save, Loader2 } from "lucide-react";
+import { ElifeBridgeTab } from "@/components/admin/ElifeBridgeTab";
 
 type ConfigMap = Record<string, string | null>;
 type Knowledge = { id: string; title: string; content: string; is_active: boolean; sort_order: number };
@@ -142,6 +143,7 @@ const ChatbotSettingsPage = () => {
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="knowledge">Knowledge Base</TabsTrigger>
             <TabsTrigger value="apikeys">External Services</TabsTrigger>
+            <TabsTrigger value="elife">e-Life Bridge</TabsTrigger>
           </TabsList>
 
           {/* General Settings */}
@@ -354,6 +356,10 @@ const ChatbotSettingsPage = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="elife">
+            <ElifeBridgeTab />
           </TabsContent>
         </Tabs>
       </div>
