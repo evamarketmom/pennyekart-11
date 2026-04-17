@@ -750,7 +750,7 @@ serve(async (req) => {
         let status = "success";
         let errorMessage: string | null = null;
         try {
-          result = await executeTool(fnName, parsedArgs, { sb, elife, userId, allowedTables, writeEnabled });
+          result = await executeTool(fnName, parsedArgs, { sb, elife, userId, callerMobile, callerIsAgent, allowedTables, writeEnabled });
           if (result?.error) { status = "error"; errorMessage = result.error; }
         } catch (e) {
           status = "error";
