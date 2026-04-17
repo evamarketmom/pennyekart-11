@@ -307,8 +307,19 @@ async function findByMobile(
 async function executeTool(
   name: string,
   args: any,
-  ctx: { sb: any; elife: any | null; userId: string | null; allowedTables: string[]; writeEnabled: boolean },
+  ctx: { sb: any; elife: any | null; userId: string | null; callerMobile: string | null; callerIsAgent: boolean; allowedTables: string[]; writeEnabled: boolean },
 ): Promise<any> {
+  // Gate: agent-only tools require the logged-in caller to be a verified e-Life agent
+  const AGENT_ONLY = new Set([
+    "elife_get_my_tasks",
+    "elife_get_work_logs",
+    "elife_log_daily_work",
+    "elife_submit_task_feedback",
+    "elife_file_complaint",
+  ]);
+  if (AGENT_ONLY.has(name) && !ctx.callerIsAgent) {
+    return { error: "This tool is only available to registered e-Life agents. The current user's mobile is not in pennyekart_agents/members." };
+  }
   if (name === "pennyekart_lookup_order") {
     if (!ctx.userId) return { error: "Sign in to view orders." };
     if (args.order_id) {
