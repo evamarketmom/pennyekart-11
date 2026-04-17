@@ -199,9 +199,8 @@ const ChatBot = () => {
 
   const loggedIn = !!user;
   const isAgent = bootstrap?.isAgent ?? false;
-  const pennyCommands = bootstrap?.pennyCommands ?? [];
   const elifeCommands = bootstrap?.elifeCommands ?? [];
-  const hasAnyCommands = pennyCommands.length > 0 || elifeCommands.length > 0;
+  const hasAnyCommands = elifeCommands.length > 0;
 
   return (
     <>
@@ -249,36 +248,23 @@ const ChatBot = () => {
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-64 max-h-[60vh] overflow-y-auto bg-background z-[60]">
-                    {pennyCommands.length > 0 && (
-                      <>
-                        <DropdownMenuLabel className="text-xs">Penny commands</DropdownMenuLabel>
-                        {pennyCommands.map((c) => (
-                          <DropdownMenuItem key={c.id} onSelect={() => runCommand(c)} className="text-sm">
-                            {c.label}
-                          </DropdownMenuItem>
-                        ))}
-                      </>
-                    )}
-                    {elifeCommands.length > 0 && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuLabel className="text-xs flex items-center gap-1">
-                          e-Life agent commands
-                          <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">Agent</Badge>
-                        </DropdownMenuLabel>
-                        {elifeCommands.map((c) => (
-                          <DropdownMenuItem key={c.id} onSelect={() => runCommand(c)} className="text-sm">
-                            <span className="font-mono mr-2 text-xs text-muted-foreground">{c.keyword}</span>
-                            <span className="truncate">{c.label}</span>
-                          </DropdownMenuItem>
-                        ))}
-                      </>
-                    )}
-                    {loggedIn && bootstrap?.elifeEnabled && !isAgent && (
+                    <DropdownMenuLabel className="text-xs flex items-center gap-1">
+                      WhatsApp Bot Commands
+                      {isAgent && (
+                        <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">Agent</Badge>
+                      )}
+                    </DropdownMenuLabel>
+                    {elifeCommands.map((c, idx) => (
+                      <DropdownMenuItem key={c.id} onSelect={() => runCommand(c)} className="text-sm">
+                        <span className="font-mono mr-2 text-xs text-muted-foreground w-5 shrink-0">{idx + 1}</span>
+                        <span className="truncate">{c.label}</span>
+                      </DropdownMenuItem>
+                    ))}
+                    {bootstrap?.elifeEnabled && !isAgent && (
                       <>
                         <DropdownMenuSeparator />
                         <div className="px-2 py-1.5 text-[11px] text-muted-foreground">
-                          Your mobile isn't registered as an e-Life agent, so agent commands are hidden.
+                          Some commands may require an e-Life agent account to run.
                         </div>
                       </>
                     )}
