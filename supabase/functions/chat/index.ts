@@ -580,6 +580,7 @@ serve(async (req) => {
 
     // Identify caller (best-effort; chatbot may be used by anon visitors)
     let userId: string | null = null;
+    let callerMobile: string | null = null;
     const authHeader = req.headers.get("Authorization");
     if (authHeader?.startsWith("Bearer ")) {
       const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
@@ -587,6 +588,10 @@ serve(async (req) => {
       });
       const { data: claims } = await userClient.auth.getClaims(authHeader.replace("Bearer ", ""));
       userId = claims?.claims?.sub ?? null;
+      if (userId) {
+        const { data: prof } = await sb.from("profiles").select("mobile_number, full_name").eq("user_id", userId).maybeSingle();
+        if (prof?.mobile_number) callerMobile = normalizeMobile(prof.mobile_number);
+      }
     }
 
     const [configRes, knowledgeRes] = await Promise.all([
