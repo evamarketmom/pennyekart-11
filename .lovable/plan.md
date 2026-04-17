@@ -1,87 +1,46 @@
 
 
-## Two-Way Bridge: Pennyekart Chatbot ↔ e-Life Society
+## Why agent 9497589094 isn't found
 
-### Architecture
+I checked the audit log — the bot **did** call `elife_get_agent_hierarchy({mobile: "9497589094"})` three times and got `"No agent records found."` each time. That tool is hardcoded to search tables named `agents`, `agent_hierarchy`, `users` — **none of which exist in e-Life**. e-Life actually stores agents in `pennyekart_agents` and `members`, and payments in `program_registrations` / `old_payments`.
 
-```text
-Pennyekart Chat (Penny bot)
-        │
-        ├─ Lovable AI Gateway (tool-calling enabled)
-        │
-        └─ chat edge function ── Pennyekart Supabase
-                              └─ e-Life Society Supabase  ◄── shared service-role access
-```
+The bridge is fully enabled with the right tables allowlisted (`pennyekart_agents`, `members`, `program_registrations`, `old_payments`, `whatsapp_bot_commands`, etc.) — only the tool implementations are looking in the wrong place.
 
-The chat edge function gains a second Supabase client pointed at e-Life's project. The AI agent uses **tool calls** to read/write across both systems on demand.
+## Fix Plan
 
-### Step 1 — Get e-Life credentials & schema
+### 1. Rewrite the typed e-Life tools in `supabase/functions/chat/index.ts`
 
-Add two new Supabase secrets (we'll prompt you):
-- `ELIFE_SUPABASE_URL`
-- `ELIFE_SUPABASE_SERVICE_ROLE_KEY`
+Replace the hardcoded table lists with the real e-Life schema:
 
-You'll grab these from e-Life's Supabase dashboard → Project Settings → API.
+| Tool | Old tables searched | New tables searched |
+|---|---|---|
+| `elife_get_agent_hierarchy` | `agents`, `agent_hierarchy`, `users` | `pennyekart_agents`, `members` (with upline join) |
+| `elife_check_payment_status` | `registrations`, `payments`, `customers` | `program_registrations`, `old_payments`, `members` |
+| `elife_send_whatsapp_command` | `whatsapp_commands` | `whatsapp_bot_commands` |
 
-We also need to know e-Life's table names. Best approach: once secrets are added, the edge function can introspect e-Life's schema and we register tools matching its real tables (programs, divisions, agents, registrations, payments, whatsapp_commands, etc.).
+Mobile-number matching will check **multiple column variants** (`mobile`, `mobile_number`, `phone`, `whatsapp_number`, `contact_number`) using `or(...)`, and normalize input by stripping `+91` / leading zeros.
 
-### Step 2 — Add admin UI for the bridge
+### 2. Add a hierarchy enrichment step
 
-Extend `ChatbotSettingsPage.tsx` with a 4th tab **"e-Life Bridge"**:
-- Toggle: enable/disable cross-system access
-- Read-mode vs Read+Write toggle (safety)
-- Per-table allowlist (checkboxes for which e-Life tables the bot can touch)
-- "Test connection" button — pings e-Life Supabase and lists available tables
-- Twilio WhatsApp passthrough toggle (sends commands via e-Life's existing Twilio webhook)
+For `elife_get_agent_hierarchy`: after finding the agent, also fetch their **upline** (referrer/parent agent) and **direct downline** (other agents whose `referrer_mobile` / `parent_id` matches), so the bot can answer "who is above/below me".
 
-Settings persist in `chatbot_config` (new keys: `elife_enabled`, `elife_write_enabled`, `elife_allowed_tables`, `elife_twilio_passthrough`).
+### 3. Improve the system prompt + tool descriptions
 
-### Step 3 — Upgrade the chat edge function with tools
+- Tell the AI: when a user gives a mobile number, **first** call `elife_get_agent_hierarchy`; if empty, fall back to `elife_query_table` against `members` and `program_registrations`.
+- Update tool descriptions so the model knows which tables are actually used.
 
-Switch the AI call to use **function calling**. Register these tools dynamically based on admin settings:
+### 4. Auto-introspect column names (one-time, cached)
 
-| Tool | What it does |
+On first call per cold start, the function will hit `${ELIFE_URL}/rest/v1/pennyekart_agents?limit=0` to confirm the table exists and discover real column names from PostgREST headers. This protects against e-Life schema drift and avoids re-debugging this same issue later.
+
+### 5. Verification
+
+After deploy I'll call the chat function with mobile `9497589094` end-to-end and confirm the audit log shows a successful hierarchy result.
+
+### Files changed
+| File | Change |
 |---|---|
-| `elife_query_programs` | List/search self-employment programs & divisions |
-| `elife_get_agent_hierarchy` | Look up agent tree by mobile/agent ID |
-| `elife_check_payment_status` | Mobile-number lookup (mirrors the public form) |
-| `elife_list_registrations` | Get a customer's registrations across divisions |
-| `elife_create_registration` | Register a customer for a program (write — gated) |
-| `elife_send_whatsapp_command` | Trigger a Twilio WhatsApp command via e-Life |
-| `pennyekart_lookup_order` | (Existing data) order/wallet lookups for cross-context answers |
+| `supabase/functions/chat/index.ts` | Rewrite `elife_get_agent_hierarchy`, `elife_check_payment_status`, `elife_send_whatsapp_command`; refine prompts |
 
-Each tool runs server-side with the right Supabase client. Results stream back into the conversation; the AI summarises in Malayalam/English per existing language config.
-
-### Step 4 — Safety & audit
-
-- All write operations require `elife_write_enabled = true` AND a per-tool confirmation phrase from the user (e.g. "yes, register me")
-- New `chatbot_audit_log` table records every cross-system call (tool, user_id, args, result, timestamp)
-- Rate limit: max 10 e-Life tool calls per user per minute (in-memory in edge function)
-
-### Step 5 — Frontend
-
-`ChatBot.tsx` only needs minor tweaks:
-- Render tool-call status chips ("Checking your payment status…")
-- Show the audit-log link in the admin settings tab
-
-### Files to create/edit
-
-| File | Action |
-|---|---|
-| Migration | Add `elife_*` keys to `chatbot_config`, create `chatbot_audit_log` table with RLS |
-| `src/pages/admin/ChatbotSettingsPage.tsx` | Add "e-Life Bridge" tab |
-| `supabase/functions/chat/index.ts` | Add e-Life Supabase client, tool registry, function-calling loop, audit logging |
-| `supabase/functions/elife-introspect/index.ts` | New helper to list e-Life tables for the admin UI |
-| `src/components/ChatBot.tsx` | Render tool-call status indicators |
-| Secrets prompt | `ELIFE_SUPABASE_URL`, `ELIFE_SUPABASE_SERVICE_ROLE_KEY` |
-
-### What you'll need to provide after approval
-
-1. **e-Life Supabase URL** (looks like `https://xxx.supabase.co`)
-2. **e-Life Supabase service-role key** (from Project Settings → API — keep secret)
-3. Confirmation that you own/admin the e-Life project (service-role key bypasses all RLS)
-
-### Out of scope (for now)
-- Modifying e-Life's own UI or schema — we only read/write to its existing tables
-- Two-way realtime sync of customer accounts (can be added later if needed)
+No DB migrations, no new secrets, no UI changes needed — the admin's allowlist already covers everything.
 
