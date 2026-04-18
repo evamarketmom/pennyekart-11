@@ -15,6 +15,7 @@ import { toast } from "@/hooks/use-toast";
 import { Plus, Edit, Trash2, BarChart3, Loader2 } from "lucide-react";
 import ImageUpload from "@/components/admin/ImageUpload";
 import { useAuth } from "@/hooks/useAuth";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 interface Notification {
   id: string;
