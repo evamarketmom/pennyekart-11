@@ -10,6 +10,7 @@ export interface AppNotification {
   link_url: string | null;
   link_label: string | null;
   target_audience: string;
+  auto_dismiss_seconds: number;
   created_at: string;
   read_at: string | null;
   clicked_at: string | null;

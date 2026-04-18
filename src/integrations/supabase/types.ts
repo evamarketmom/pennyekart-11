@@ -875,6 +875,7 @@ export type Database = {
       }
       notifications: {
         Row: {
+          auto_dismiss_seconds: number
           created_at: string
           created_by: string | null
           id: string
@@ -889,6 +890,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          auto_dismiss_seconds?: number
           created_at?: string
           created_by?: string | null
           id?: string
@@ -903,6 +905,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          auto_dismiss_seconds?: number
           created_at?: string
           created_by?: string | null
           id?: string

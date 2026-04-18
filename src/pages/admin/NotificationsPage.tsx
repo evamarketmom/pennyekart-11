@@ -27,6 +27,7 @@ interface Notification {
   target_audience: string;
   target_local_body_ids: string[];
   is_active: boolean;
+  auto_dismiss_seconds: number;
   created_at: string;
 }
 
@@ -76,6 +77,7 @@ const NotificationsPage = () => {
       target_audience: editing.target_audience || "all",
       target_local_body_ids: editing.target_local_body_ids || [],
       is_active: editing.is_active ?? true,
+      auto_dismiss_seconds: Math.max(0, Number(editing.auto_dismiss_seconds) || 0),
     };
     const { error } = editing.id
       ? await supabase.from("notifications").update(payload).eq("id", editing.id)
@@ -300,6 +302,17 @@ const NotificationsPage = () => {
                 </div>
               </div>
             )}
+            <div>
+              <Label>Auto-dismiss after (seconds)</Label>
+              <Input
+                type="number"
+                min={0}
+                placeholder="0 = stay until closed"
+                value={editing?.auto_dismiss_seconds ?? 0}
+                onChange={(e) => setEditing({ ...editing, auto_dismiss_seconds: Number(e.target.value) })}
+              />
+              <p className="text-xs text-muted-foreground mt-1">Set how many seconds the popup stays before auto-closing. Use 0 to keep it open until the user closes it.</p>
+            </div>
             <div className="flex items-center justify-between">
               <Label>Active</Label>
               <Switch

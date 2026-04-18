@@ -22,6 +22,13 @@ const NotificationPopup = () => {
     sessionStorage.setItem(SHOWN_KEY, JSON.stringify([...shown, firstUnread.id]));
   }, [firstUnread]);
 
+  // Auto-dismiss after configured seconds (0 = disabled)
+  useEffect(() => {
+    if (!open || !firstUnread?.auto_dismiss_seconds || firstUnread.auto_dismiss_seconds <= 0) return;
+    const t = setTimeout(() => setOpen(false), firstUnread.auto_dismiss_seconds * 1000);
+    return () => clearTimeout(t);
+  }, [open, firstUnread]);
+
   if (!firstUnread) return null;
 
   const handleView = () => {

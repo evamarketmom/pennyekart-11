@@ -1,0 +1,2 @@
+ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS auto_dismiss_seconds integer NOT NULL DEFAULT 0;
+COMMENT ON COLUMN public.notifications.auto_dismiss_seconds IS 'Seconds before popup auto-disappears. 0 = never auto-dismiss.';
