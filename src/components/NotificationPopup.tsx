@@ -23,11 +23,14 @@ const NotificationPopup = () => {
   }, [firstUnread]);
 
   // Auto-dismiss after configured seconds (0 = disabled)
+  // Only starts AFTER the user opens the full message, so the initial prompt never auto-closes.
   useEffect(() => {
-    if (!open || !firstUnread?.auto_dismiss_seconds || firstUnread.auto_dismiss_seconds <= 0) return;
-    const t = setTimeout(() => setOpen(false), firstUnread.auto_dismiss_seconds * 1000);
+    if (!open || !showFull) return;
+    const seconds = firstUnread?.auto_dismiss_seconds ?? 0;
+    if (!seconds || seconds <= 0) return;
+    const t = setTimeout(() => setOpen(false), seconds * 1000);
     return () => clearTimeout(t);
-  }, [open, firstUnread]);
+  }, [open, showFull, firstUnread]);
 
   if (!firstUnread) return null;
 
