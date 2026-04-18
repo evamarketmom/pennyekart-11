@@ -1,28 +1,24 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Bell, ExternalLink, X } from "lucide-react";
-import { useNotifications } from "@/hooks/useNotifications";
+import { useNotifications, type AppNotification } from "@/hooks/useNotifications";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import NotificationDetailDialog from "@/components/NotificationDetailDialog";
 
 const NotificationBell = () => {
-  const { notifications, unreadCount, markRead, markClicked } = useNotifications();
+  const { notifications, unreadCount, markRead } = useNotifications();
   const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
+  const [selected, setSelected] = useState<AppNotification | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
-  const handleClick = (n: typeof notifications[number]) => {
-    markRead(n.id);
-    if (n.link_url) {
-      markClicked(n.id);
-      if (n.link_url.startsWith("http")) {
-        window.open(n.link_url, "_blank", "noopener,noreferrer");
-      } else {
-        navigate(n.link_url);
-        setOpen(false);
-      }
-    }
+  const handleClick = (n: AppNotification) => {
+    if (!n.read_at) markRead(n.id);
+    setSelected(n);
+    setDetailOpen(true);
+    setOpen(false);
   };
+
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
