@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
   LayoutDashboard, Users, ShieldCheck, Package, ShoppingCart,
-  Image, LogOut, ChevronLeft, Settings, Grid3X3, Wrench, MapPin, Warehouse, ClipboardList, Truck, Store, Star, SlidersHorizontal, BarChart3, Wallet, Handshake, Menu, X, Percent, Bot,
+  Image, LogOut, ChevronLeft, Settings, Grid3X3, Wrench, MapPin, Warehouse, ClipboardList, Truck, Store, Star, SlidersHorizontal, BarChart3, Wallet, Handshake, Menu, X, Percent, Bot, Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -33,6 +33,7 @@ const navItems = [
   { label: "Sales Report", icon: BarChart3, path: "/admin/sales-report", perm: "read_reports" },
   { label: "Reports", icon: BarChart3, path: "/admin/reports", perm: "read_reports" },
   { label: "Chatbot Settings", icon: Bot, path: "/admin/chatbot", perm: "read_settings" },
+  { label: "Notifications", icon: Bell, path: "/admin/notifications", perm: "read_settings" },
 ];
 
 const NavItems = ({ items, currentPath, onNavigate }: { items: typeof navItems; currentPath: string; onNavigate?: () => void }) => (

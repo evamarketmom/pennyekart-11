@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import InviteFriendDialog from "@/components/InviteFriendDialog";
+import NotificationBell from "@/components/NotificationBell";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
@@ -80,6 +81,7 @@ const Navbar = () => {
               <span className="text-xs font-bold text-emerald-600">₹{walletBalance}</span>
             </button>
           )}
+          {user && <NotificationBell />}
           <button className="relative text-foreground" aria-label="Cart" onClick={() => navigate("/cart")}>
             <ShoppingCart className="h-5 w-5" />
           </button>
