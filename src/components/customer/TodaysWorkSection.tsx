@@ -133,7 +133,7 @@ export const TodaysWorkSection = () => {
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
               <Briefcase className="h-4 w-4 text-primary" />
-              {isToday ? "Today's Work" : `Work — ${format(date, "PPP")}`}
+              {isToday ? "Today's Work- ഇന്നത്തെ വർക്ക്" : `Work — ${format(date, "PPP")}`}
             </CardTitle>
             <CardDescription className="text-xs">
               Synced with e-Life Society • Agent: <span className="font-medium">{agent.name}</span>{" "}
