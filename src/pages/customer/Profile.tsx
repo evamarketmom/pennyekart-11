@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Package, Clock, CheckCircle, Truck, MapPin, User, Phone, Mail, ChevronRight, ShoppingBag, Heart, Bell, Wallet, XCircle, RotateCcw } from "lucide-react";
+import { ArrowLeft, Package, Clock, CheckCircle, Truck, MapPin, User, Phone, Mail, ChevronRight, ShoppingBag, Heart, Bell, Wallet, XCircle, RotateCcw, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,6 +14,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { TodaysWorkSection } from "@/components/customer/TodaysWorkSection";
+import { useNotifications } from "@/hooks/useNotifications";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import NotificationDetailDialog from "@/components/NotificationDetailDialog";
 
 interface Order {
   id: string;
