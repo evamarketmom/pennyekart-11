@@ -166,7 +166,7 @@ export const TodaysWorkSection = () => {
           <Textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder={isToday ? "What did you work on today? (visits, calls, deliveries...)" : `Add a log entry for ${format(date, "PPP")}`}
+            placeholder={isToday ? "നിങ്ങൾ ഇന്ന് എന്തെങ്കിലും ജോലി ചെയ്തത് ഇവിടെ നോട്ട് ചെയ്യൂ ഇത് നിങ്ങളുടെ വരുമാനം വർധിപ്പിക്കൂ.." : `Add a log entry for ${format(date, "PPP")}`}
             rows={3}
             className="resize-none"
           />
