@@ -558,54 +558,108 @@ const NotificationsPage = () => {
                 <AccordionItem value="per-user">
                   <AccordionTrigger className="font-semibold">Per-User Drilldown</AccordionTrigger>
                   <AccordionContent>
-                    {/* Mobile: card list */}
-                    <div className="sm:hidden space-y-2">
-                      {filteredUsers.length === 0 ? (
-                        <p className="text-center text-muted-foreground py-4 text-sm">No users</p>
-                      ) : filteredUsers.map((u: any) => (
-                        <div key={u.user_id} className="border rounded-md p-3 text-sm space-y-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="font-medium truncate">{u.full_name || "-"}</p>
-                            <span className="text-xs text-muted-foreground shrink-0">{u.mobile_number || "-"}</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground">{u.local_body_name || "-"} · Ward {u.ward_number ?? "-"}</p>
-                          <div className="grid grid-cols-3 gap-1 text-[11px] pt-1">
-                            <div><span className="text-muted-foreground">D:</span> {u.delivered_at ? new Date(u.delivered_at).toLocaleDateString() : "-"}</div>
-                            <div><span className="text-muted-foreground">R:</span> {u.read_at ? new Date(u.read_at).toLocaleDateString() : "-"}</div>
-                            <div><span className="text-muted-foreground">C:</span> {u.clicked_at ? new Date(u.clicked_at).toLocaleDateString() : "-"}</div>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="flex justify-end mb-2">
+                      <Button size="sm" variant="outline" onClick={() => exportUsersCSV()} className="h-8">
+                        <Download className="h-3.5 w-3.5 mr-1" /> Export All
+                      </Button>
                     </div>
-                    {/* Desktop: table */}
-                    <div className="hidden sm:block overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Mobile</TableHead>
-                            <TableHead>Panchayath</TableHead>
-                            <TableHead>Ward</TableHead>
-                            <TableHead>Delivered</TableHead>
-                            <TableHead>Read</TableHead>
-                            <TableHead>Clicked</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredUsers.map((u: any) => (
-                            <TableRow key={u.user_id}>
-                              <TableCell>{u.full_name || "-"}</TableCell>
-                              <TableCell className="text-xs">{u.mobile_number || "-"}</TableCell>
-                              <TableCell>{u.local_body_name || "-"}</TableCell>
-                              <TableCell>{u.ward_number ?? "-"}</TableCell>
-                              <TableCell className="text-xs">{u.delivered_at ? new Date(u.delivered_at).toLocaleString() : "-"}</TableCell>
-                              <TableCell className="text-xs">{u.read_at ? new Date(u.read_at).toLocaleString() : "-"}</TableCell>
-                              <TableCell className="text-xs">{u.clicked_at ? new Date(u.clicked_at).toLocaleString() : "-"}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
+                    {Object.entries(groupedUsersByPanchayath).length === 0 ? (
+                      <p className="text-center text-muted-foreground py-4 text-sm">No users</p>
+                    ) : (
+                      <Accordion type="multiple" className="w-full space-y-2">
+                        {(Object.entries(groupedUsersByPanchayath) as [string, any[]][])
+                          .sort(([a], [b]) => a.localeCompare(b))
+                          .map(([panchayath, users]) => {
+                            const d = users.filter((u) => u.delivered_at).length;
+                            const r = users.filter((u) => u.read_at).length;
+                            const c = users.filter((u) => u.clicked_at).length;
+                            return (
+                              <AccordionItem key={panchayath} value={panchayath} className="border rounded-md px-3">
+                                <AccordionTrigger className="hover:no-underline py-3">
+                                  <div className="flex-1 flex items-center justify-between gap-2 pr-2 min-w-0">
+                                    <span className="font-medium text-sm sm:text-base truncate text-left">
+                                      {panchayath} <span className="text-xs text-muted-foreground">({users.length})</span>
+                                    </span>
+                                    <div className="flex items-center gap-1.5 text-xs shrink-0">
+                                      <Badge variant="outline" className="font-normal">D {d}</Badge>
+                                      <Badge variant="outline" className="font-normal text-primary border-primary/40">R {r}</Badge>
+                                      <Badge variant="outline" className="font-normal text-emerald-600 border-emerald-600/40">C {c}</Badge>
+                                    </div>
+                                  </div>
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                  <div className="flex flex-wrap justify-end gap-2 mb-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-8"
+                                      onClick={() => exportUsersCSV(users, `${panchayath.replace(/[^a-z0-9]+/gi, "_")}_users`)}
+                                    >
+                                      <Download className="h-3.5 w-3.5 mr-1" /> Export
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-8 text-emerald-600 border-emerald-600/40 hover:bg-emerald-50 hover:text-emerald-700"
+                                      onClick={() => shareUsersToWhatsApp(panchayath, users)}
+                                    >
+                                      <MessageCircle className="h-3.5 w-3.5 mr-1" /> Share to WhatsApp
+                                    </Button>
+                                  </div>
+                                  {/* Mobile: card list */}
+                                  <div className="sm:hidden space-y-2">
+                                    {[...users]
+                                      .sort((a, b) => (Number(a.ward_number) || 0) - (Number(b.ward_number) || 0))
+                                      .map((u: any) => (
+                                        <div key={u.user_id} className="border rounded-md p-3 text-sm space-y-1">
+                                          <div className="flex items-center justify-between gap-2">
+                                            <p className="font-medium truncate">{u.full_name || "-"}</p>
+                                            <span className="text-xs text-muted-foreground shrink-0">{u.mobile_number || "-"}</span>
+                                          </div>
+                                          <p className="text-xs text-muted-foreground">Ward {u.ward_number ?? "-"}</p>
+                                          <div className="grid grid-cols-3 gap-1 text-[11px] pt-1">
+                                            <div><span className="text-muted-foreground">D:</span> {u.delivered_at ? new Date(u.delivered_at).toLocaleDateString() : "-"}</div>
+                                            <div><span className="text-muted-foreground">R:</span> {u.read_at ? new Date(u.read_at).toLocaleDateString() : "-"}</div>
+                                            <div><span className="text-muted-foreground">C:</span> {u.clicked_at ? new Date(u.clicked_at).toLocaleDateString() : "-"}</div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                  </div>
+                                  {/* Desktop: table */}
+                                  <div className="hidden sm:block overflow-x-auto">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead>Name</TableHead>
+                                          <TableHead>Mobile</TableHead>
+                                          <TableHead className="w-20">Ward</TableHead>
+                                          <TableHead>Delivered</TableHead>
+                                          <TableHead>Read</TableHead>
+                                          <TableHead>Clicked</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {[...users]
+                                          .sort((a, b) => (Number(a.ward_number) || 0) - (Number(b.ward_number) || 0))
+                                          .map((u: any) => (
+                                            <TableRow key={u.user_id}>
+                                              <TableCell>{u.full_name || "-"}</TableCell>
+                                              <TableCell className="text-xs">{u.mobile_number || "-"}</TableCell>
+                                              <TableCell>Ward {u.ward_number ?? "-"}</TableCell>
+                                              <TableCell className="text-xs">{u.delivered_at ? new Date(u.delivered_at).toLocaleString() : "-"}</TableCell>
+                                              <TableCell className="text-xs">{u.read_at ? new Date(u.read_at).toLocaleString() : "-"}</TableCell>
+                                              <TableCell className="text-xs">{u.clicked_at ? new Date(u.clicked_at).toLocaleString() : "-"}</TableCell>
+                                            </TableRow>
+                                          ))}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            );
+                          })}
+                      </Accordion>
+                    )}
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
