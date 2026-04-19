@@ -74,22 +74,15 @@ const fetchAreaProducts = async (localBodyId: string, wardNumber: number): Promi
   }
 
   if (sellerRes.data && sellerRes.data.length > 0) {
-    // Filter out products from unapproved partners
-    const sellerIds = [...new Set(sellerRes.data.map(sp => sp.seller_id))];
-    const { data: approvedProfiles } = await supabase
-      .from("profiles")
-      .select("user_id")
-      .in("user_id", sellerIds)
-      .eq("is_approved", true);
-    const approvedSet = new Set((approvedProfiles ?? []).map(p => p.user_id));
-
+    // Note: seller_products.is_approved is already filtered server-side by an admin,
+    // so we don't need to re-check the seller's profile.is_approved here.
+    // Doing so would fail silently because RLS on `profiles` only allows users to
+    // read their own profile — making the approved set empty and hiding all seller items.
     allProducts.push(
-      ...sellerRes.data
-        .filter(sp => approvedSet.has(sp.seller_id))
-        .map(sp => ({
-          ...sp,
-          section: "seller" as string | null,
-        } as AreaProduct))
+      ...sellerRes.data.map(sp => ({
+        ...sp,
+        section: "seller" as string | null,
+      } as AreaProduct))
     );
   }
 
