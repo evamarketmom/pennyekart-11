@@ -447,14 +447,14 @@ const NotificationsPage = () => {
                         {Object.entries(groupedByPanchayath).length === 0 ? (
                           <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-4">No data</TableCell></TableRow>
                         ) : (
-                          Object.entries(groupedByPanchayath).map(([panchayath, groups]) => {
+                          (Object.entries(groupedByPanchayath) as [string, any[]][]).map(([panchayath, groups]) => {
                             const subtotal = groups.reduce(
-                              (a: any, g: any) => ({ d: a.d + g.delivered, r: a.r + g.read, c: a.c + g.clicked }),
+                              (a: { d: number; r: number; c: number }, g: any) => ({ d: a.d + g.delivered, r: a.r + g.read, c: a.c + g.clicked }),
                               { d: 0, r: 0, c: 0 }
                             );
                             return (
                               <>
-                                {groups
+                                {[...groups]
                                   .sort((a: any, b: any) => (Number(a.ward_number) || 0) - (Number(b.ward_number) || 0))
                                   .map((g: any, i: number) => (
                                     <TableRow key={`${panchayath}-${i}`}>
