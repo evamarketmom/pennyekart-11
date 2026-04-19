@@ -141,7 +141,29 @@ const NotificationsPage = () => {
     setEditing({ ...editing, target_local_body_ids: next });
   };
 
-  const filteredUsers = (analytics?.users ?? []).filter((u: any) => {
+  // Deduplicate users by user_id (keep the most recent record by read/clicked/delivered)
+  const dedupedUsers = (() => {
+    const map = new Map<string, any>();
+    for (const u of (analytics?.users ?? [])) {
+      const key = u.user_id || `${u.mobile_number || ""}-${u.full_name || ""}`;
+      const existing = map.get(key);
+      if (!existing) {
+        map.set(key, u);
+      } else {
+        // Merge: prefer non-null timestamps (latest activity)
+        map.set(key, {
+          ...existing,
+          ...u,
+          delivered_at: u.delivered_at || existing.delivered_at,
+          read_at: u.read_at || existing.read_at,
+          clicked_at: u.clicked_at || existing.clicked_at,
+        });
+      }
+    }
+    return Array.from(map.values());
+  })();
+
+  const filteredUsers = dedupedUsers.filter((u: any) => {
     if (filterPanchayath !== "all" && u.local_body_name !== filterPanchayath) return false;
     if (filterWard !== "all" && String(u.ward_number) !== filterWard) return false;
     return true;
