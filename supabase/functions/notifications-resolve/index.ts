@@ -113,14 +113,17 @@ serve(async (req) => {
       if (userIds.length) {
         const { data: profs } = await sb
           .from("profiles")
-          .select("user_id, full_name, mobile_number, local_body_id, ward_number, locations_local_bodies(name)")
+          .select("user_id, full_name, mobile_number, local_body_id, ward_number, user_type, is_super_admin, role_id, locations_local_bodies(name), roles(name)")
           .in("user_id", userIds);
         usersData = profs ?? [];
       }
 
       const userMap = new Map(usersData.map((u) => [u.user_id, u]));
       const enriched = (reads ?? []).map((r) => {
-        const u = userMap.get(r.user_id) || {};
+        const u: any = userMap.get(r.user_id) || {};
+        const roleName = u.is_super_admin
+          ? "Super Admin"
+          : u.roles?.name || (u.user_type && u.user_type !== "customer" ? u.user_type : null);
         return {
           user_id: r.user_id,
           full_name: u.full_name,
@@ -128,6 +131,9 @@ serve(async (req) => {
           local_body_id: u.local_body_id,
           local_body_name: u.locations_local_bodies?.name ?? null,
           ward_number: u.ward_number,
+          user_type: u.user_type ?? null,
+          role_name: roleName,
+          has_role: !!roleName,
           delivered_at: r.delivered_at,
           read_at: r.read_at,
           clicked_at: r.clicked_at,
