@@ -36,6 +36,8 @@ export const TodaysWorkSection = () => {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
+  const [monthLogs, setMonthLogs] = useState<WorkLog[]>([]);
+  const [monthCursor, setMonthCursor] = useState<Date>(new Date());
 
   const callFn = async (opts: { method: string; query?: Record<string, string>; body?: any }) => {
     const { data: { session } } = await supabase.auth.getSession();
