@@ -115,6 +115,11 @@ export const TodaysWorkSection = () => {
     return attendance.presentSet.has(ymd(date)) ? "present" as const : "absent" as const;
   }, [date, attendance.presentSet]);
 
+  const refreshMonth = async () => {
+    const r = await callFn({ method: "GET", query: { month: format(monthCursor, "yyyy-MM") } });
+    if (r.ok) setMonthLogs(r.body.logs || []);
+  };
+
   const handleAdd = async () => {
     if (!draft.trim()) return;
     setSaving(true);
@@ -122,8 +127,11 @@ export const TodaysWorkSection = () => {
     setSaving(false);
     if (!r.ok) { toast.error(r.body?.error || "Failed to save"); return; }
     setDraft("");
-    setLogs((prev) => [r.body.log, ...prev]);
-    toast.success("Work log saved to e-Life");
+    // Reload selected day so we see the appended/merged record
+    const reload = await callFn({ method: "GET", query: { date: ymd(date) } });
+    if (reload.ok) setLogs(reload.body.logs || []);
+    refreshMonth();
+    toast.success("Marked present • Saved to e-Life");
   };
 
   const handleUpdate = async (id: string) => {
@@ -142,6 +150,7 @@ export const TodaysWorkSection = () => {
     const r = await callFn({ method: "DELETE", query: { id } });
     if (!r.ok) { toast.error(r.body?.error || "Failed to delete"); return; }
     setLogs((prev) => prev.filter((l) => l.id !== id));
+    refreshMonth();
     toast.success("Deleted");
   };
 
