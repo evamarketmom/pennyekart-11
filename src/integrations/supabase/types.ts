@@ -1580,9 +1580,31 @@ export type Database = {
           },
         ]
       }
+      seller_product_micro_godowns: {
+        Row: {
+          created_at: string
+          godown_id: string
+          id: string
+          seller_product_id: string
+        }
+        Insert: {
+          created_at?: string
+          godown_id: string
+          id?: string
+          seller_product_id: string
+        }
+        Update: {
+          created_at?: string
+          godown_id?: string
+          id?: string
+          seller_product_id?: string
+        }
+        Relationships: []
+      }
       seller_products: {
         Row: {
           area_godown_id: string | null
+          assign_to_all_micro_godowns: boolean
           category: string | null
           coming_soon: boolean
           created_at: string
@@ -1597,6 +1619,7 @@ export type Database = {
           is_active: boolean
           is_approved: boolean
           is_featured: boolean
+          is_grocery: boolean
           margin_percentage: number | null
           mrp: number
           name: string
@@ -1612,6 +1635,7 @@ export type Database = {
         }
         Insert: {
           area_godown_id?: string | null
+          assign_to_all_micro_godowns?: boolean
           category?: string | null
           coming_soon?: boolean
           created_at?: string
@@ -1626,6 +1650,7 @@ export type Database = {
           is_active?: boolean
           is_approved?: boolean
           is_featured?: boolean
+          is_grocery?: boolean
           margin_percentage?: number | null
           mrp?: number
           name: string
@@ -1641,6 +1666,7 @@ export type Database = {
         }
         Update: {
           area_godown_id?: string | null
+          assign_to_all_micro_godowns?: boolean
           category?: string | null
           coming_soon?: boolean
           created_at?: string
@@ -1655,6 +1681,7 @@ export type Database = {
           is_active?: boolean
           is_approved?: boolean
           is_featured?: boolean
+          is_grocery?: boolean
           margin_percentage?: number | null
           mrp?: number
           name?: string
