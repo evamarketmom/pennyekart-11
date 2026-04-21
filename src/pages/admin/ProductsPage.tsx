@@ -116,6 +116,16 @@ const ProductsPage = () => {
       .select("*")
       .order("created_at", { ascending: false });
     setSellerProducts((data as SellerProduct[]) ?? []);
+
+    // Fetch micro-godown assignment counts per product
+    const { data: links } = await supabase
+      .from("seller_product_micro_godowns")
+      .select("seller_product_id");
+    const counts: Record<string, number> = {};
+    (links ?? []).forEach((l: any) => {
+      counts[l.seller_product_id] = (counts[l.seller_product_id] ?? 0) + 1;
+    });
+    setMicroGodownCounts(counts);
   };
 
   const fetchSellerProfiles = async () => {
@@ -128,11 +138,21 @@ const ProductsPage = () => {
     setCategories((data as Category[]) ?? []);
   };
 
+  const fetchMicroGodownTotal = async () => {
+    const { count } = await supabase
+      .from("godowns")
+      .select("id", { count: "exact", head: true })
+      .eq("godown_type", "micro")
+      .eq("is_active", true);
+    setMicroGodownTotal(count ?? 0);
+  };
+
   useEffect(() => {
     fetchProducts();
     fetchSellerProducts();
     fetchSellerProfiles();
     fetchCategories();
+    fetchMicroGodownTotal();
   }, []);
 
   // Get category margin percentage
