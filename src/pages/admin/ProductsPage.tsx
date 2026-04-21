@@ -15,6 +15,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { Plus, Pencil, Trash2, ExternalLink, Clock, Store, CheckCircle, XCircle, Percent, Calculator, Star, Search, Eye } from "lucide-react";
 import ImageUpload from "@/components/admin/ImageUpload";
 import ProductVariants from "@/components/admin/ProductVariants";
+import MicroGodownAssignDialog from "@/components/admin/MicroGodownAssignDialog";
+import { Warehouse } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface Product {
