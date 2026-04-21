@@ -1,66 +1,77 @@
 
 
-## Issue: /admin/orders hides seller orders
+## Goal
 
-**Root cause:** `OrdersPage.tsx` filters tabs against a hardcoded list of statuses (`pending`, `confirmed`, `processing`, `shipped`, `self_delivery_*`, `delivered`, `cancelled`). Seller orders use statuses that aren't in any tab — so they completely disappear:
-- `seller_confirmation_pending`
-- `seller_accepted`
-- `return_requested`
-- `return_confirmed`
+When a selling partner adds a product under a **grocery** category, admin can assign it to **all** or **selected** micro godowns. Customers only see seller products if their ward maps to one of the assigned micro godowns.
 
-The page also has no seller column, no source indicator, and no way to view order details — making it hard to triage seller-related issues.
+## Current state
 
-## Fix Plan
+- `seller_products` has `area_godown_id` (single area-godown link) and is filtered globally — no micro-godown-level visibility control.
+- `useAreaProducts.tsx` already resolves the customer's micro godown(s) via `godown_wards` and area godowns via `godown_local_bodies`, then queries `seller_products` by `area_godown_id`.
+- `categories.category_type` distinguishes `grocery` from other types.
+- Admin Products page (`src/pages/admin/ProductsPage.tsx`) has a Seller Products tab.
 
-Edit `src/pages/admin/OrdersPage.tsx` only. No DB or RLS changes needed (orders RLS already permits admin read).
+## Approach
 
-### 1. Expand tab buckets to cover ALL order statuses
+A many-to-many `seller_product_micro_godowns` link table + admin assignment UI + customer-side visibility filter.
 
-```text
-Pending     → pending, seller_confirmation_pending
-Processing  → confirmed, processing, accepted, packed, pickup, shipped,
-              seller_accepted, self_delivery_pickup, self_delivery_shipped
-Delivered   → delivered
-Returns     → return_requested, return_confirmed   (NEW tab)
-Cancelled   → cancelled
-Other       → anything not matched above           (safety net so nothing is ever hidden)
-```
+### 1. Database migration
 
-A new "Returns" tab is added; an "Other" tab appears only when unknown statuses exist (prevents future regressions).
+**New table** `seller_product_micro_godowns`:
+- `id uuid pk`
+- `seller_product_id uuid not null` → seller_products.id (no FK, indexed)
+- `godown_id uuid not null` → godowns.id (indexed)
+- `created_at timestamptz default now()`
+- Unique `(seller_product_id, godown_id)`
 
-### 2. Enrich the orders table
+RLS:
+- SELECT: anyone (public read — needed by customer query)
+- INSERT/UPDATE/DELETE: `is_super_admin() OR has_permission('update_products')`
 
-Add columns and load supporting data:
-- **Customer** — name + mobile (join via `profiles` by `user_id`)
-- **Seller** — name + "Seller Order" badge when `seller_id` is set OR any item has `source === 'seller_product'`
-- **Items count** — derived from `items` jsonb length
-- Keep existing Order ID, Total, Status, Date
+**Helper column** on `seller_products`: `assign_to_all_micro_godowns boolean default false` — when true, product is visible in every micro godown (no link rows needed). Defaults to false so a new grocery seller product is invisible until admin assigns it.
 
-Fetch profile names in a single follow-up query keyed by the union of `user_id`s and `seller_id`s.
+**Auto-flag trigger** `mark_grocery_seller_product`:
+- BEFORE INSERT/UPDATE OF category on `seller_products`
+- Sets a new `is_grocery boolean` column based on `categories.category_type = 'grocery'` lookup.
+- Used by admin UI to surface only relevant rows in the new "Micro Godown Assignment" view.
 
-### 3. Friendly status labels + color map
+### 2. Admin UI — `src/pages/admin/ProductsPage.tsx` (Seller Products tab)
 
-Reuse the `STATUS_LABELS` map from the selling-partner dashboard (extend it for return statuses) and a unified `statusColor()` so the admin sees "Confirmed - Awaiting Delivery" instead of raw `seller_accepted`.
+- Add a **"Micro Godown"** column showing either "All" badge or a count chip ("3 godowns") for each row.
+- Add a **"Assign Micro Godowns"** action button per row → opens a dialog:
+  - Toggle: **"Assign to all micro godowns"** (writes `assign_to_all_micro_godowns`).
+  - When off: searchable checkbox list of every active `godown_type='micro'` godown, pre-checked from `seller_product_micro_godowns`.
+  - Save: upserts `assign_to_all_micro_godowns` and replaces link rows for that product.
+- Add filter dropdown above the table: **All / Grocery only / Non-grocery / Unassigned grocery** (helps admin find products needing assignment).
 
-### 4. Status dropdown — full list
+### 3. Customer-side visibility — `src/hooks/useAreaProducts.tsx`
 
-Expand the `statuses` array used in the update dropdown to include every status above so admins can move seller orders through their lifecycle from this page.
+Update the `seller_products` query:
+- Resolve the customer's micro godown IDs (already computed via `godown_wards` join).
+- Fetch seller products that are EITHER:
+  - `assign_to_all_micro_godowns = true`, OR
+  - present in `seller_product_micro_godowns` for one of the customer's micro godown IDs.
+- Keep existing `is_active`, `is_approved`, `coming_soon`, `stock > 0` filters.
 
-### 5. View Details button
+Implementation: two parallel queries (all-flag set + linked rows for customer's micro godowns), merge by id, dedupe.
 
-Wire up the existing `OrderDetailDialog` component (already used on partner/delivery dashboards) so admins can open any order, see items, address, and use the "Navigate to Customer" map button.
+### 4. Selling partner side
 
-### 6. Search + Seller filter
+No code change. Partner creates product as today; visibility defaults to "none" until admin assigns. (Optional follow-up: notify admin on new grocery seller product — out of scope here.)
 
-Add a small search input (matches order id / customer name / mobile) and a "Show: All / Seller orders / Direct orders" toggle above the tabs for quick triage.
+## Files touched
 
-## Files to change
+- `supabase/migrations/<new>.sql` — new table, columns, trigger, RLS, backfill
+- `src/pages/admin/ProductsPage.tsx` — column + dialog + filter
+- `src/hooks/useAreaProducts.tsx` — visibility filter rewrite
+- `src/integrations/supabase/types.ts` — auto-regenerated
 
-- `src/pages/admin/OrdersPage.tsx` — single-file rewrite implementing the above
+## Verification
 
-## Out of scope
-
-- No schema migration
-- No changes to seller/delivery dashboards
-- No new permissions
+1. Selling partner creates a grocery product → row appears in admin Seller Products with empty Micro Godown column.
+2. Admin opens assignment dialog → picks 2 micro godowns → save.
+3. Customer mapped to one of those micro godowns sees the product on home/category pages.
+4. Customer mapped to a different micro godown does not see it.
+5. Admin toggles "Assign to all" → all customers in any micro godown see it.
+6. Non-grocery seller products continue to behave as today (unaffected).
 
