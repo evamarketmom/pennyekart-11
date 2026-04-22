@@ -718,10 +718,27 @@ const ProductsPage = () => {
 
             return (
               <>
+                {unassignedTotalCount > 0 && (
+                  <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-md border border-yellow-400/60 bg-yellow-50 dark:bg-yellow-900/20 p-3">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      ⚠️ <strong>{unassignedTotalCount}</strong> grocery product{unassignedTotalCount > 1 ? "s are" : " is"} unassigned and invisible to customers. Assign them to micro godowns to make them visible.
+                    </p>
+                    {sellerGroceryFilter !== "unassigned_grocery" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-yellow-500 text-yellow-800 dark:text-yellow-200 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 shrink-0"
+                        onClick={() => setSellerGroceryFilter("unassigned_grocery")}
+                      >
+                        Show unassigned
+                      </Button>
+                    )}
+                  </div>
+                )}
                 {/* Mobile card view */}
                 <div className="block md:hidden space-y-3">
                   {filtered.map((p) => (
-                    <div key={p.id} className="rounded-lg border bg-card p-3 space-y-2">
+                    <div key={p.id} className={`rounded-lg border p-3 space-y-2 ${isUnassignedGrocery(p) ? "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-400/60" : "bg-card"}`}>
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{p.name}</p>
