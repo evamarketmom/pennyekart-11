@@ -529,6 +529,14 @@ const ProductsPage = () => {
           <TabsTrigger value="sellers">
             Seller Products
             <Badge variant="secondary" className="ml-2">{sellerProducts.length}</Badge>
+            {(() => {
+              const unassignedCount = sellerProducts.filter(
+                (p) => p.is_grocery && !p.assign_to_all_micro_godowns && (microGodownCounts[p.id] ?? 0) === 0
+              ).length;
+              return unassignedCount > 0 ? (
+                <Badge className="ml-1 bg-destructive text-destructive-foreground border-0">{unassignedCount}</Badge>
+              ) : null;
+            })()}
           </TabsTrigger>
         </TabsList>
 
