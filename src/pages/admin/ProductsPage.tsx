@@ -797,7 +797,7 @@ const ProductsPage = () => {
                     </TableHeader>
                     <TableBody>
                       {filtered.map((p) => (
-                        <TableRow key={p.id}>
+                        <TableRow key={p.id} className={isUnassignedGrocery(p) ? "bg-yellow-50 dark:bg-yellow-900/20" : undefined}>
                           <TableCell className="font-medium">{p.name}</TableCell>
                           <TableCell>{p.category ?? "—"}</TableCell>
                           <TableCell>₹{p.purchase_rate}</TableCell>
