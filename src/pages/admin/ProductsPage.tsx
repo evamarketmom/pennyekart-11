@@ -529,6 +529,14 @@ const ProductsPage = () => {
           <TabsTrigger value="sellers">
             Seller Products
             <Badge variant="secondary" className="ml-2">{sellerProducts.length}</Badge>
+            {(() => {
+              const unassignedCount = sellerProducts.filter(
+                (p) => p.is_grocery && !p.assign_to_all_micro_godowns && (microGodownCounts[p.id] ?? 0) === 0
+              ).length;
+              return unassignedCount > 0 ? (
+                <Badge className="ml-1 bg-destructive text-destructive-foreground border-0">{unassignedCount}</Badge>
+              ) : null;
+            })()}
           </TabsTrigger>
         </TabsList>
 
@@ -671,6 +679,9 @@ const ProductsPage = () => {
           </div>
 
           {(() => {
+            const isUnassignedGrocery = (p: SellerProduct) =>
+              !!p.is_grocery && !p.assign_to_all_micro_godowns && (microGodownCounts[p.id] ?? 0) === 0;
+
             const filterFn = (p: SellerProduct) => {
               if (sellerCategoryFilter && p.category !== sellerCategoryFilter) return false;
               if (sellerFilter && p.seller_id !== sellerFilter) return false;
@@ -678,13 +689,18 @@ const ProductsPage = () => {
               if (sellerGroceryFilter === "grocery" && !p.is_grocery) return false;
               if (sellerGroceryFilter === "non_grocery" && p.is_grocery) return false;
               if (sellerGroceryFilter === "unassigned_grocery") {
-                if (!p.is_grocery) return false;
-                if (p.assign_to_all_micro_godowns) return false;
-                if ((microGodownCounts[p.id] ?? 0) > 0) return false;
+                if (!isUnassignedGrocery(p)) return false;
               }
               return true;
             };
-            const filtered = sellerProducts.filter(filterFn);
+            const filtered = sellerProducts.filter(filterFn).sort((a, b) => {
+              // Auto-sort unassigned grocery rows to the top
+              const aU = isUnassignedGrocery(a) ? 0 : 1;
+              const bU = isUnassignedGrocery(b) ? 0 : 1;
+              return aU - bU;
+            });
+
+            const unassignedTotalCount = sellerProducts.filter(isUnassignedGrocery).length;
 
             const renderGodownBadge = (p: SellerProduct) => {
               if (!p.is_grocery) {
@@ -702,10 +718,27 @@ const ProductsPage = () => {
 
             return (
               <>
+                {unassignedTotalCount > 0 && (
+                  <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-md border border-yellow-400/60 bg-yellow-50 dark:bg-yellow-900/20 p-3">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      ⚠️ <strong>{unassignedTotalCount}</strong> grocery product{unassignedTotalCount > 1 ? "s are" : " is"} unassigned and invisible to customers. Assign them to micro godowns to make them visible.
+                    </p>
+                    {sellerGroceryFilter !== "unassigned_grocery" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-yellow-500 text-yellow-800 dark:text-yellow-200 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 shrink-0"
+                        onClick={() => setSellerGroceryFilter("unassigned_grocery")}
+                      >
+                        Show unassigned
+                      </Button>
+                    )}
+                  </div>
+                )}
                 {/* Mobile card view */}
                 <div className="block md:hidden space-y-3">
                   {filtered.map((p) => (
-                    <div key={p.id} className="rounded-lg border bg-card p-3 space-y-2">
+                    <div key={p.id} className={`rounded-lg border p-3 space-y-2 ${isUnassignedGrocery(p) ? "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-400/60" : "bg-card"}`}>
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{p.name}</p>
@@ -764,7 +797,7 @@ const ProductsPage = () => {
                     </TableHeader>
                     <TableBody>
                       {filtered.map((p) => (
-                        <TableRow key={p.id}>
+                        <TableRow key={p.id} className={isUnassignedGrocery(p) ? "bg-yellow-50 dark:bg-yellow-900/20" : undefined}>
                           <TableCell className="font-medium">{p.name}</TableCell>
                           <TableCell>{p.category ?? "—"}</TableCell>
                           <TableCell>₹{p.purchase_rate}</TableCell>
