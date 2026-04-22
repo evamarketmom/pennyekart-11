@@ -679,6 +679,9 @@ const ProductsPage = () => {
           </div>
 
           {(() => {
+            const isUnassignedGrocery = (p: SellerProduct) =>
+              !!p.is_grocery && !p.assign_to_all_micro_godowns && (microGodownCounts[p.id] ?? 0) === 0;
+
             const filterFn = (p: SellerProduct) => {
               if (sellerCategoryFilter && p.category !== sellerCategoryFilter) return false;
               if (sellerFilter && p.seller_id !== sellerFilter) return false;
@@ -686,13 +689,18 @@ const ProductsPage = () => {
               if (sellerGroceryFilter === "grocery" && !p.is_grocery) return false;
               if (sellerGroceryFilter === "non_grocery" && p.is_grocery) return false;
               if (sellerGroceryFilter === "unassigned_grocery") {
-                if (!p.is_grocery) return false;
-                if (p.assign_to_all_micro_godowns) return false;
-                if ((microGodownCounts[p.id] ?? 0) > 0) return false;
+                if (!isUnassignedGrocery(p)) return false;
               }
               return true;
             };
-            const filtered = sellerProducts.filter(filterFn);
+            const filtered = sellerProducts.filter(filterFn).sort((a, b) => {
+              // Auto-sort unassigned grocery rows to the top
+              const aU = isUnassignedGrocery(a) ? 0 : 1;
+              const bU = isUnassignedGrocery(b) ? 0 : 1;
+              return aU - bU;
+            });
+
+            const unassignedTotalCount = sellerProducts.filter(isUnassignedGrocery).length;
 
             const renderGodownBadge = (p: SellerProduct) => {
               if (!p.is_grocery) {
