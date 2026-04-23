@@ -29,19 +29,21 @@ const NotificationDetailDialog = ({ notification, open, onOpenChange }: Props) =
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="p-6 pb-2 shrink-0">
           <DialogTitle>{notification.title}</DialogTitle>
         </DialogHeader>
-        {notification.image_url && (
-          <img
-            src={notification.image_url}
-            alt={notification.title}
-            className="w-full max-h-64 object-contain rounded-md border"
-          />
-        )}
-        <p className="text-sm text-foreground whitespace-pre-wrap">{notification.message}</p>
-        <div className="flex gap-2">
+        <div className="flex-1 overflow-y-auto px-6 py-2 space-y-3">
+          {notification.image_url && (
+            <img
+              src={notification.image_url}
+              alt={notification.title}
+              className="w-full max-h-64 object-contain rounded-md border"
+            />
+          )}
+          <p className="text-sm text-foreground whitespace-pre-wrap">{notification.message}</p>
+        </div>
+        <div className="flex gap-2 p-4 border-t bg-background shrink-0">
           {notification.link_url && (
             <Button className="flex-1" onClick={handleLinkClick}>
               <ExternalLink className="h-4 w-4 mr-2" />
