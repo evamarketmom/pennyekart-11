@@ -1551,6 +1551,101 @@ export type Database = {
         }
         Relationships: []
       }
+      scratch_card_claims: {
+        Row: {
+          card_id: string
+          claimed_at: string
+          id: string
+          reward_amount: number
+          user_id: string
+          wallet_tx_id: string | null
+        }
+        Insert: {
+          card_id: string
+          claimed_at?: string
+          id?: string
+          reward_amount?: number
+          user_id: string
+          wallet_tx_id?: string | null
+        }
+        Update: {
+          card_id?: string
+          claimed_at?: string
+          id?: string
+          reward_amount?: number
+          user_id?: string
+          wallet_tx_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scratch_card_claims_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "scratch_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scratch_cards: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          created_by: string | null
+          end_at: string
+          id: string
+          is_active: boolean
+          max_claims_per_user: number
+          requires_agent_streak_days: number | null
+          reveal_image_url: string | null
+          reveal_text: string | null
+          reward_amount: number
+          start_at: string
+          subtitle: string | null
+          target_audience: string
+          target_local_body_ids: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          end_at?: string
+          id?: string
+          is_active?: boolean
+          max_claims_per_user?: number
+          requires_agent_streak_days?: number | null
+          reveal_image_url?: string | null
+          reveal_text?: string | null
+          reward_amount?: number
+          start_at?: string
+          subtitle?: string | null
+          target_audience?: string
+          target_local_body_ids?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          end_at?: string
+          id?: string
+          is_active?: boolean
+          max_claims_per_user?: number
+          requires_agent_streak_days?: number | null
+          reveal_image_url?: string | null
+          reveal_text?: string | null
+          reward_amount?: number
+          start_at?: string
+          subtitle?: string | null
+          target_audience?: string
+          target_local_body_ids?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       seller_godown_assignments: {
         Row: {
           created_at: string
